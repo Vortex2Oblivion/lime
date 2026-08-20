@@ -327,6 +327,12 @@ class Font
 		#end
 	}
 
+	@:noCompletion 
+	inline private function __setSize(size:Int):Void
+	{
+		setSize(size);
+	}
+
 	/**
 	 * Sets the font size.
 	 *

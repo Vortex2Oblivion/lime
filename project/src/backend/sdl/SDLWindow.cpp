@@ -95,6 +95,9 @@ namespace lime
 		}
 
 		sdlWindow = SDL_CreateWindow(title, width, height, sdlWindowFlags);
+		DisplayMode d;
+		GetDisplayMode(&d);
+		Move((int)((d.width - GetWidth()) / 2), (int)((d.height - GetHeight()) / 2));
 
 		if (!sdlWindow)
 		{

@@ -15,6 +15,8 @@ enum abstract RenderContextType(String) from String to String
 	**/
 	var CANVAS = "canvas";
 
+	var DOM = "dom";
+
 	/**
 		Describes an OpenGL render context
 	**/
