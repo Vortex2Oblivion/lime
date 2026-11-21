@@ -58,3 +58,6 @@
 [submodule "project/lib/freetype"]
 	path = project/lib/freetype
 	url = https://gitlab.com/freetype/freetype
+[submodule "project/lib/openal"]
+	path = project/lib/openal
+	url = https://github.com/kcat/openal-soft
