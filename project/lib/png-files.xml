@@ -41,10 +41,11 @@
 		<file name="${NATIVE_TOOLKIT_PATH}/libpng/pngwtran.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/libpng/pngwutil.c" />
 
-		<section if="ios || tvos">
-
+		<section if="ios || tvos || mac">
+			<echo value="arm build" />
 			<file name="${NATIVE_TOOLKIT_PATH}/libpng/arm/arm_init.c" />
 			<file name="${NATIVE_TOOLKIT_PATH}/libpng/arm/filter_neon_intrinsics.c" />
+			<file name="${NATIVE_TOOLKIT_PATH}/libpng/arm/palette_neon_intrinsics.c" />
 
 		</section>
 
