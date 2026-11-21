@@ -211,19 +211,15 @@
 			<section if="emscripten">
 
 				<compilerflag value="-s" />
-				<compilerflag value="USE_SDL=2" />
+				<compilerflag value="USE_SDL=3" />
 
 			</section>
 
 			<section unless="emscripten">
 
 				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/default/" unless="windows || mac || linux || rpi" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/linux/" if="linux" unless="rpi" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/windows/" if="windows" unless="winrt" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/mac/" if="mac" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/rpi/" if="rpi" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/winrt/" if="winrt" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/SDl3/" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/build_config" />
 
 				<compilerflag value="-DHAVE_LIBC" />
 
@@ -345,7 +341,7 @@
 	<include name="lib/openal/files.xml" />
 	<include name="lib/pixman/files.xml" />
 	<include name="lib/png/files.xml" />
-	<include name="lib/sdl/files.xml" />
+	<include name="lib/sdl-files.xml" />
 	<include name="lib/tinyfiledialogs-files.xml" />
 	<include name="lib/vorbis/files.xml" />
 	<include name="lib/vpx/files.xml" />
