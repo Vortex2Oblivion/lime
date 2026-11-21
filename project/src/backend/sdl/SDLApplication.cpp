@@ -13,43 +13,43 @@
 #include "emscripten.h"
 #endif
 
+namespace lime
+{
 
-namespace lime {
-
-
-	AutoGCRoot* Application::callback = 0;
-	SDLApplication* SDLApplication::currentApplication = 0;
+	AutoGCRoot *Application::callback = 0;
+	SDLApplication *SDLApplication::currentApplication = 0;
 
 	const int analogAxisDeadZone = 1000;
-	std::map<int, std::map<int, int> > gamepadsAxisMap;
+	std::map<int, std::map<int, int>> gamepadsAxisMap;
 	bool inBackground = false;
 
 	double performanceFrequency = 0.0;
 	double performanceCounter = 0.0;
 
-	#if defined(ANDROID) || defined (IPHONE)
+#if defined(ANDROID) || defined(IPHONE)
 	SDL_SensorID gyroscopeSensorID = -1;
-	SDL_Sensor* gyroscopeSensor = nullptr;
+	SDL_Sensor *gyroscopeSensor = nullptr;
 
 	SDL_SensorID accelerometerSensorID = -1;
-	SDL_Sensor* accelerometerSensor = nullptr;
-	#endif
+	SDL_Sensor *accelerometerSensor = nullptr;
+#endif
 
-	SDLApplication::SDLApplication () {
-		Uint32 initFlags = SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_TIMER | SDL_INIT_JOYSTICK;
-		#if defined(LIME_MOJOAL) || defined(LIME_OPENALSOFT)
+	SDLApplication::SDLApplication()
+	{
+		Uint32 initFlags = SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK;
+#if defined(LIME_MOJOAL) || defined(LIME_OPENALSOFT)
 		initFlags |= SDL_INIT_AUDIO;
-		#endif
+#endif
 
-		if (SDL_Init (initFlags) != 0) {
+		if (SDL_Init(initFlags) != 0)
+		{
 
-			printf ("Could not initialize SDL: %s.\n", SDL_GetError ());
-
+			printf("Could not initialize SDL: %s.\n", SDL_GetError());
 		}
 		performanceFrequency = (double)SDL_GetPerformanceFrequency();
 		performanceCounter = (double)SDL_GetPerformanceCounter();
 
-		SDL_LogSetPriority (SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_WARN);
+		SDL_SetLogPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_WARN);
 
 		currentApplication = this;
 
@@ -72,678 +72,672 @@ namespace lime {
 		TouchEvent touchEvent;
 		WindowEvent windowEvent;
 
-		#if defined(ANDROID) || defined (IPHONE)
-		SDL_EventState (SDL_SENSORUPDATE, SDL_ENABLE);
-		#endif
+		SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, true);
+		SDL_SetEventEnabled(SDL_EVENT_DROP_TEXT, true);
+		SDL_SetEventEnabled(SDL_EVENT_DROP_BEGIN, true);
+		SDL_SetEventEnabled(SDL_EVENT_DROP_COMPLETE, true);
 
-		SDL_EventState (SDL_DROPFILE, SDL_ENABLE);
+#if defined(ANDROID) || defined(IPHONE)
+		InitializeSensors();
+#endif
+		SDLJoystick::Init();
 
-		#if defined(ANDROID) || defined (IPHONE)
-		InitializeSensors ();
-		#endif
-		SDLJoystick::Init ();
-
-		#ifdef HX_MACOS
-		CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL (CFBundleGetMainBundle ());
+#ifdef HX_MACOS
+		CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(CFBundleGetMainBundle());
 		char path[PATH_MAX];
 
-		if (CFURLGetFileSystemRepresentation (resourcesURL, TRUE, (UInt8 *)path, PATH_MAX)) {
+		if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX))
+		{
 
-			chdir (path);
-
+			chdir(path);
 		}
 
-		CFRelease (resourcesURL);
-		#endif
-
+		CFRelease(resourcesURL);
+#endif
 	}
 
-	#if defined(ANDROID) || defined (IPHONE)
-	void SDLApplication::InitializeSensors () {
+#if defined(ANDROID) || defined(IPHONE)
+	void SDLApplication::InitializeSensors()
+	{
 
-		gyroscopeSensorID = System::GetFirstGyroscopeSensorId ();
-
-		if (gyroscopeSensorID > 0)
-			gyroscopeSensor = SDL_SensorOpen (gyroscopeSensorID);
-
-		accelerometerSensorID = System::GetFirstAccelerometerSensorId ();
+		gyroscopeSensorID = System::GetFirstGyroscopeSensorId();
 
 		if (gyroscopeSensorID > 0)
-			accelerometerSensor = SDL_SensorOpen (gyroscopeSensorID);
+			gyroscopeSensor = SDL_SensorOpen(gyroscopeSensorID);
 
+		accelerometerSensorID = System::GetFirstAccelerometerSensorId();
+
+		if (gyroscopeSensorID > 0)
+			accelerometerSensor = SDL_SensorOpen(gyroscopeSensorID);
 	}
-	#endif
+#endif
 
-	SDLApplication::~SDLApplication () {
+	SDLApplication::~SDLApplication()
+	{
 
-		#if defined(ANDROID) || defined(IPHONE)
-		if (gyroscopeSensor) {
+#if defined(ANDROID) || defined(IPHONE)
+		if (gyroscopeSensor)
+		{
 
-			SDL_SensorClose (gyroscopeSensor);
+			SDL_SensorClose(gyroscopeSensor);
 			gyroscopeSensor = nullptr;
 			gyroscopeSensorID = -1;
-
 		}
 
-		if (accelerometerSensor) {
+		if (accelerometerSensor)
+		{
 
-			SDL_SensorClose (accelerometerSensor);
+			SDL_SensorClose(accelerometerSensor);
 			accelerometerSensor = nullptr;
 			accelerometerSensorID = -1;
-
 		}
-		#endif
-
+#endif
 	}
 
+	int SDLApplication::Exec()
+	{
 
-	int SDLApplication::Exec () {
+		Init();
 
-		Init ();
+#ifdef EMSCRIPTEN
+		emscripten_cancel_main_loop();
+		emscripten_set_main_loop(UpdateFrame, 0, 0);
+		emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
+#endif
 
-		#ifdef EMSCRIPTEN
-		emscripten_cancel_main_loop ();
-		emscripten_set_main_loop (UpdateFrame, 0, 0);
-		emscripten_set_main_loop_timing (EM_TIMING_RAF, 1);
-		#endif
-
-		#if defined(IPHONE) || defined(EMSCRIPTEN)
+#if defined(IPHONE) || defined(EMSCRIPTEN)
 
 		return 0;
 
-		#else
+#else
 
-		while (active) {
+		while (active)
+		{
 
-			Update ();
-
+			Update();
 		}
 
-		return Quit ();
+		return Quit();
 
-		#endif
-
+#endif
 	}
 
-	double getTime() {
+	double getTime()
+	{
 		const double counter = (double)SDL_GetPerformanceCounter() - performanceCounter;
 		return (counter / performanceFrequency) * 1000.0;
-
 	}
-	void busyWait(double ms) {
+	void busyWait(double ms)
+	{
 		const double start = getTime();
-		while (getTime() - start < ms) {
+		while (getTime() - start < ms)
+		{
 			std::this_thread::yield();
 		}
 	}
 
-	void coolSleep(double sleepFor) {
+	void coolSleep(double sleepFor)
+	{
 		double dt = 0.0;
 		double start = getTime();
 		double threshold = sleepFor - (0.9765625 * 2.2);
 
 		while ((dt = getTime() - start) < threshold)
 			SDL_Delay(1);
-		
+
 		double end = getTime();
-		
+
 		double remainder = (end - start) - dt;
 		if (remainder > 0)
 			busyWait(remainder);
 	}
 
-	void SDLApplication::HandleEvent (SDL_Event* event) {
+	void SDLApplication::HandleEvent(SDL_Event *event)
+	{
 
-		#if defined(IPHONE) || defined(EMSCRIPTEN)
+#if defined(IPHONE) || defined(EMSCRIPTEN)
 
 		int top = 0;
-		gc_set_top_of_stack(&top,false);
+		gc_set_top_of_stack(&top, false);
 
-		#endif
+#endif
 
-		switch (event->type) {
+		switch (event->type)
+		{
 
-			case SDL_USEREVENT:
+		case SDL_EVENT_USER:
 
-				if (!inBackground) {
-					applicationEvent.type = UPDATE;
-					applicationEvent.deltaTime = currentUpdate - lastUpdate;
-					
-					double start = getTime();
+			if (!inBackground)
+			{
+				applicationEvent.type = UPDATE;
+				applicationEvent.deltaTime = currentUpdate - lastUpdate;
 
-					ApplicationEvent::Dispatch (&applicationEvent);
-					RenderEvent::Dispatch (&renderEvent);
+				double start = getTime();
 
-					double end = getTime();
-					double remainder = end - start;
+				ApplicationEvent::Dispatch(&applicationEvent);
+				RenderEvent::Dispatch(&renderEvent);
 
-					if (framePeriod > 0.0) {
-						double sleepDuration = framePeriod - remainder;
-						if (sleepDuration > 0)
-							coolSleep(sleepDuration);
-					}
+				double end = getTime();
+				double remainder = end - start;
+
+				if (framePeriod > 0.0)
+				{
+					double sleepDuration = framePeriod - remainder;
+					if (sleepDuration > 0)
+						coolSleep(sleepDuration);
 				}
+			}
 
-				break;
+			break;
 
-			case SDL_APP_WILLENTERBACKGROUND:
+		case SDL_EVENT_WILL_ENTER_BACKGROUND:
 
-				inBackground = true;
+			inBackground = true;
 
-				windowEvent.type = WINDOW_DEACTIVATE;
-				WindowEvent::Dispatch (&windowEvent);
-				break;
+			windowEvent.type = WINDOW_DEACTIVATE;
+			WindowEvent::Dispatch(&windowEvent);
+			break;
 
-			case SDL_APP_WILLENTERFOREGROUND:
+		case SDL_EVENT_WILL_ENTER_FOREGROUND:
 
-				break;
+			break;
 
-			case SDL_APP_DIDENTERFOREGROUND:
+		case SDL_EVENT_DID_ENTER_FOREGROUND:
 
-				windowEvent.type = WINDOW_ACTIVATE;
-				WindowEvent::Dispatch (&windowEvent);
+			windowEvent.type = WINDOW_ACTIVATE;
+			WindowEvent::Dispatch(&windowEvent);
 
-				inBackground = false;
-				break;
+			inBackground = false;
+			break;
 
-			case SDL_CLIPBOARDUPDATE:
+		case SDL_EVENT_CLIPBOARD_UPDATE:
 
-				ProcessClipboardEvent (event);
-				break;
+			ProcessClipboardEvent(event);
+			break;
 
-			case SDL_CONTROLLERAXISMOTION:
-			case SDL_CONTROLLERBUTTONDOWN:
-			case SDL_CONTROLLERBUTTONUP:
-			case SDL_CONTROLLERDEVICEADDED:
-			case SDL_CONTROLLERDEVICEREMOVED:
+		case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+		case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+		case SDL_EVENT_GAMEPAD_BUTTON_UP:
+		case SDL_EVENT_GAMEPAD_ADDED:
+		case SDL_EVENT_GAMEPAD_REMOVED:
 
-				ProcessGamepadEvent (event);
-				break;
+			ProcessGamepadEvent(event);
+			break;
 
-			case SDL_DROPFILE:
+		case SDL_EVENT_DROP_FILE:
 
-				ProcessDropEvent (event);
-				break;
+			ProcessDropEvent(event);
+			break;
 
-			case SDL_FINGERMOTION:
-			case SDL_FINGERDOWN:
-			case SDL_FINGERUP:
+		case SDL_EVENT_FINGER_MOTION:
+		case SDL_EVENT_FINGER_DOWN:
+		case SDL_EVENT_FINGER_UP:
 
-				ProcessTouchEvent (event);
-				break;
+			ProcessTouchEvent(event);
+			break;
 
-			#if defined(ANDROID) || defined (IPHONE)
-			case SDL_SENSORUPDATE:
+#if defined(ANDROID) || defined(IPHONE)
+		case SDL_SENSORUPDATE:
 
-				ProcessSensorEvent (event);
-				break;
-			
-			#endif
+			ProcessSensorEvent(event);
+			break;
 
-			case SDL_JOYAXISMOTION:
+#endif
 
-				ProcessJoystickEvent (event);
-				break;
+		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
 
-			case SDL_JOYBALLMOTION:
-			case SDL_JOYBUTTONDOWN:
-			case SDL_JOYBUTTONUP:
-			case SDL_JOYHATMOTION:
-			case SDL_JOYDEVICEADDED:
-			case SDL_JOYDEVICEREMOVED:
+			ProcessJoystickEvent(event);
+			break;
 
-				ProcessJoystickEvent (event);
-				break;
+		case SDL_EVENT_JOYSTICK_BALL_MOTION:
+		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+		case SDL_EVENT_JOYSTICK_BUTTON_UP:
+		case SDL_EVENT_JOYSTICK_HAT_MOTION:
+		case SDL_EVENT_JOYSTICK_ADDED:
+		case SDL_EVENT_JOYSTICK_REMOVED:
 
-			case SDL_KEYDOWN:
-			case SDL_KEYUP:
+			ProcessJoystickEvent(event);
+			break;
 
-				ProcessKeyEvent (event);
-				break;
+		case SDL_EVENT_KEY_DOWN:
+		case SDL_EVENT_KEY_UP:
 
-			case SDL_MOUSEMOTION:
-			case SDL_MOUSEBUTTONDOWN:
-			case SDL_MOUSEBUTTONUP:
-			case SDL_MOUSEWHEEL:
+			ProcessKeyEvent(event);
+			break;
 
-				ProcessMouseEvent (event);
-				break;
+		case SDL_EVENT_MOUSE_MOTION:
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+		case SDL_EVENT_MOUSE_BUTTON_UP:
+		case SDL_EVENT_MOUSE_WHEEL:
 
-			#ifndef EMSCRIPTEN
-			case SDL_RENDER_DEVICE_RESET:
+			ProcessMouseEvent(event);
+			break;
 
-				renderEvent.type = RENDER_CONTEXT_LOST;
-				RenderEvent::Dispatch (&renderEvent);
+#ifndef EMSCRIPTEN
+		case SDL_EVENT_RENDER_DEVICE_RESET:
 
-				renderEvent.type = RENDER_CONTEXT_RESTORED;
-				RenderEvent::Dispatch (&renderEvent);
+			renderEvent.type = RENDER_CONTEXT_LOST;
+			RenderEvent::Dispatch(&renderEvent);
 
-				renderEvent.type = RENDER;
-				break;
-			#endif
+			renderEvent.type = RENDER_CONTEXT_RESTORED;
+			RenderEvent::Dispatch(&renderEvent);
 
-			case SDL_TEXTINPUT:
-			case SDL_TEXTEDITING:
+			renderEvent.type = RENDER;
+			break;
+#endif
 
-				ProcessTextEvent (event);
-				break;
+		case SDL_EVENT_TEXT_INPUT:
+		case SDL_EVENT_TEXT_EDITING:
 
-			case SDL_WINDOWEVENT:
+			ProcessTextEvent(event);
+			break;
 
-				switch (event->window.event) {
+		case SDL_EVENT_WINDOW_MOUSE_ENTER:
+		case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+		case SDL_EVENT_WINDOW_SHOWN:
+		case SDL_EVENT_WINDOW_HIDDEN:
+		case SDL_EVENT_WINDOW_FOCUS_GAINED:
+		case SDL_EVENT_WINDOW_FOCUS_LOST:
+		case SDL_EVENT_WINDOW_MAXIMIZED:
+		case SDL_EVENT_WINDOW_MINIMIZED:
+		case SDL_EVENT_WINDOW_MOVED:
+		case SDL_EVENT_WINDOW_RESTORED:
 
-					case SDL_WINDOWEVENT_ENTER:
-					case SDL_WINDOWEVENT_LEAVE:
-					case SDL_WINDOWEVENT_SHOWN:
-					case SDL_WINDOWEVENT_HIDDEN:
-					case SDL_WINDOWEVENT_FOCUS_GAINED:
-					case SDL_WINDOWEVENT_FOCUS_LOST:
-					case SDL_WINDOWEVENT_MAXIMIZED:
-					case SDL_WINDOWEVENT_MINIMIZED:
-					case SDL_WINDOWEVENT_MOVED:
-					case SDL_WINDOWEVENT_RESTORED:
+			ProcessWindowEvent(event);
+			break;
 
-						ProcessWindowEvent (event);
-						break;
+		case SDL_EVENT_WINDOW_EXPOSED:
 
-					case SDL_WINDOWEVENT_EXPOSED:
+			ProcessWindowEvent(event);
 
-						ProcessWindowEvent (event);
+			if (!inBackground)
+			{
 
-						if (!inBackground) {
+				RenderEvent::Dispatch(&renderEvent);
+			}
 
-							RenderEvent::Dispatch (&renderEvent);
+			break;
 
-						}
+		case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 
-						break;
+			ProcessWindowEvent(event);
 
-					case SDL_WINDOWEVENT_SIZE_CHANGED:
+			if (!inBackground)
+			{
 
-						ProcessWindowEvent (event);
+				RenderEvent::Dispatch(&renderEvent);
+			}
 
-						if (!inBackground) {
+			break;
 
-							RenderEvent::Dispatch (&renderEvent);
+		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 
-						}
+			ProcessWindowEvent(event);
 
-						break;
+			// Avoid handling SDL_EVENT_QUIT if in response to window.close
+			SDL_Event event;
 
-					case SDL_WINDOWEVENT_CLOSE:
+			if (SDL_PollEvent(&event))
+			{
 
-						ProcessWindowEvent (event);
+				if (event.type != SDL_EVENT_QUIT)
+				{
 
-						// Avoid handling SDL_QUIT if in response to window.close
-						SDL_Event event;
-
-						if (SDL_PollEvent (&event)) {
-
-							if (event.type != SDL_QUIT) {
-
-								HandleEvent (&event);
-
-							}
-
-						}
-						break;
-
+					HandleEvent(&event);
 				}
+			}
+			break;
 
-				break;
+		case SDL_EVENT_QUIT:
 
-			case SDL_QUIT:
-
-				active = false;
-				break;
-
+			active = false;
+			break;
 		}
-
 	}
 
-
-	void SDLApplication::Init () {
+	void SDLApplication::Init()
+	{
 		active = true;
-		
+
 		double ticks = (double)SDL_GetPerformanceCounter();
 		lastUpdate = ticks;
 	}
 
+	void SDLApplication::ProcessClipboardEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessClipboardEvent (SDL_Event* event) {
-
-		if (ClipboardEvent::callback) {
+		if (ClipboardEvent::callback)
+		{
 
 			clipboardEvent.type = CLIPBOARD_UPDATE;
 
-			ClipboardEvent::Dispatch (&clipboardEvent);
-
+			ClipboardEvent::Dispatch(&clipboardEvent);
 		}
-
 	}
 
+	void SDLApplication::ProcessDropEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessDropEvent (SDL_Event* event) {
-
-		if (DropEvent::callback) {
+		if (DropEvent::callback)
+		{
 
 			dropEvent.type = DROP_FILE;
-			dropEvent.file = (vbyte*)event->drop.file;
+			dropEvent.file = (vbyte *)event->drop.data;
 
-			DropEvent::Dispatch (&dropEvent);
-			SDL_free (dropEvent.file);
-
+			DropEvent::Dispatch(&dropEvent);
+			SDL_free(dropEvent.file);
 		}
-
 	}
 
+	void SDLApplication::ProcessGamepadEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessGamepadEvent (SDL_Event* event) {
+		if (GamepadEvent::callback)
+		{
 
-		if (GamepadEvent::callback) {
+			switch (event->type)
+			{
 
-			switch (event->type) {
+			case SDL_EVENT_GAMEPAD_AXIS_MOTION:
 
-				case SDL_CONTROLLERAXISMOTION:
+				if (gamepadsAxisMap[event->gaxis.which].empty())
+				{
 
-					if (gamepadsAxisMap[event->caxis.which].empty ()) {
-
-						gamepadsAxisMap[event->caxis.which][event->caxis.axis] = event->caxis.value;
-
-					} else if (gamepadsAxisMap[event->caxis.which][event->caxis.axis] == event->caxis.value) {
-
-						break;
-
-					}
-
-					gamepadEvent.type = GAMEPAD_AXIS_MOVE;
-					gamepadEvent.axis = event->caxis.axis;
-					gamepadEvent.id = event->caxis.which;
-
-					if (event->caxis.value > -analogAxisDeadZone && event->caxis.value < analogAxisDeadZone) {
-
-						if (gamepadsAxisMap[event->caxis.which][event->caxis.axis] != 0) {
-
-							gamepadsAxisMap[event->caxis.which][event->caxis.axis] = 0;
-							gamepadEvent.axisValue = 0;
-							GamepadEvent::Dispatch (&gamepadEvent);
-
-						}
-
-						break;
-
-					}
-
-					gamepadsAxisMap[event->caxis.which][event->caxis.axis] = event->caxis.value;
-					gamepadEvent.axisValue = event->caxis.value / (event->caxis.value > 0 ? 32767.0 : 32768.0);
-
-					GamepadEvent::Dispatch (&gamepadEvent);
-					break;
-
-				case SDL_CONTROLLERBUTTONDOWN:
-
-					gamepadEvent.type = GAMEPAD_BUTTON_DOWN;
-					gamepadEvent.button = event->cbutton.button;
-					gamepadEvent.id = event->cbutton.which;
-
-					GamepadEvent::Dispatch (&gamepadEvent);
-					break;
-
-				case SDL_CONTROLLERBUTTONUP:
-
-					gamepadEvent.type = GAMEPAD_BUTTON_UP;
-					gamepadEvent.button = event->cbutton.button;
-					gamepadEvent.id = event->cbutton.which;
-
-					GamepadEvent::Dispatch (&gamepadEvent);
-					break;
-
-				case SDL_CONTROLLERDEVICEADDED:
-
-					if (SDLGamepad::Connect (event->cdevice.which)) {
-
-						gamepadEvent.type = GAMEPAD_CONNECT;
-						gamepadEvent.id = SDLGamepad::GetInstanceID (event->cdevice.which);
-
-						GamepadEvent::Dispatch (&gamepadEvent);
-
-					}
+					gamepadsAxisMap[event->gaxis.which][event->gaxis.axis] = event->gaxis.value;
+				}
+				else if (gamepadsAxisMap[event->gaxis.which][event->gaxis.axis] == event->gaxis.value)
+				{
 
 					break;
-
-				case SDL_CONTROLLERDEVICEREMOVED: {
-
-					gamepadEvent.type = GAMEPAD_DISCONNECT;
-					gamepadEvent.id = event->cdevice.which;
-
-					GamepadEvent::Dispatch (&gamepadEvent);
-					SDLGamepad::Disconnect (event->cdevice.which);
-					break;
-
 				}
 
+				gamepadEvent.type = GAMEPAD_AXIS_MOVE;
+				gamepadEvent.axis = event->gaxis.axis;
+				gamepadEvent.id = event->gaxis.which;
+
+				if (event->gaxis.value > -analogAxisDeadZone && event->gaxis.value < analogAxisDeadZone)
+				{
+
+					if (gamepadsAxisMap[event->gaxis.which][event->gaxis.axis] != 0)
+					{
+
+						gamepadsAxisMap[event->gaxis.which][event->gaxis.axis] = 0;
+						gamepadEvent.axisValue = 0;
+						GamepadEvent::Dispatch(&gamepadEvent);
+					}
+
+					break;
+				}
+
+				gamepadsAxisMap[event->gaxis.which][event->gaxis.axis] = event->gaxis.value;
+				gamepadEvent.axisValue = event->gaxis.value / (event->gaxis.value > 0 ? 32767.0 : 32768.0);
+
+				GamepadEvent::Dispatch(&gamepadEvent);
+				break;
+
+			case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+
+				gamepadEvent.type = GAMEPAD_BUTTON_DOWN;
+				gamepadEvent.button = event->gbutton.button;
+				gamepadEvent.id = event->gbutton.which;
+
+				GamepadEvent::Dispatch(&gamepadEvent);
+				break;
+
+			case SDL_EVENT_GAMEPAD_BUTTON_UP:
+
+				gamepadEvent.type = GAMEPAD_BUTTON_UP;
+				gamepadEvent.button = event->gbutton.button;
+				gamepadEvent.id = event->gbutton.which;
+
+				GamepadEvent::Dispatch(&gamepadEvent);
+				break;
+
+			case SDL_EVENT_GAMEPAD_ADDED:
+
+				if (SDLGamepad::Connect(event->cdevice.which))
+				{
+
+					gamepadEvent.type = GAMEPAD_CONNECT;
+					gamepadEvent.id = SDLGamepad::GetInstanceID(event->cdevice.which);
+
+					GamepadEvent::Dispatch(&gamepadEvent);
+				}
+
+				break;
+
+			case SDL_EVENT_GAMEPAD_REMOVED:
+			{
+
+				gamepadEvent.type = GAMEPAD_DISCONNECT;
+				gamepadEvent.id = event->cdevice.which;
+
+				GamepadEvent::Dispatch(&gamepadEvent);
+				SDLGamepad::Disconnect(event->cdevice.which);
+				break;
 			}
-
+			}
 		}
-
 	}
 
+	void SDLApplication::ProcessJoystickEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessJoystickEvent (SDL_Event* event) {
+		if (JoystickEvent::callback)
+		{
 
-		if (JoystickEvent::callback) {
+			switch (event->type)
+			{
 
-			switch (event->type) {
+			case SDL_EVENT_JOYSTICK_AXIS_MOTION:
 
-				case SDL_JOYAXISMOTION:
+				if (!SDLJoystick::IsAccelerometer(event->jaxis.which))
+				{
 
-					if (!SDLJoystick::IsAccelerometer (event->jaxis.which)) {
+					joystickEvent.type = JOYSTICK_AXIS_MOVE;
+					joystickEvent.index = event->jaxis.axis;
+					joystickEvent.x = event->jaxis.value / (event->jaxis.value > 0 ? 32767.0 : 32768.0);
+					joystickEvent.id = event->jaxis.which;
 
-						joystickEvent.type = JOYSTICK_AXIS_MOVE;
-						joystickEvent.index = event->jaxis.axis;
-						joystickEvent.x = event->jaxis.value / (event->jaxis.value > 0 ? 32767.0 : 32768.0);
-						joystickEvent.id = event->jaxis.which;
+					JoystickEvent::Dispatch(&joystickEvent);
+				}
+				break;
 
-						JoystickEvent::Dispatch (&joystickEvent);
+			case SDL_EVENT_JOYSTICK_BALL_MOTION:
 
-					}
-					break;
+				if (!SDLJoystick::IsAccelerometer(event->jball.which))
+				{
 
-				case SDL_JOYBALLMOTION:
+					joystickEvent.type = JOYSTICK_TRACKBALL_MOVE;
+					joystickEvent.index = event->jball.ball;
+					joystickEvent.x = event->jball.xrel / (event->jball.xrel > 0 ? 32767.0 : 32768.0);
+					joystickEvent.y = event->jball.yrel / (event->jball.yrel > 0 ? 32767.0 : 32768.0);
+					joystickEvent.id = event->jball.which;
 
-					if (!SDLJoystick::IsAccelerometer (event->jball.which)) {
+					JoystickEvent::Dispatch(&joystickEvent);
+				}
+				break;
 
-						joystickEvent.type = JOYSTICK_TRACKBALL_MOVE;
-						joystickEvent.index = event->jball.ball;
-						joystickEvent.x = event->jball.xrel / (event->jball.xrel > 0 ? 32767.0 : 32768.0);
-						joystickEvent.y = event->jball.yrel / (event->jball.yrel > 0 ? 32767.0 : 32768.0);
-						joystickEvent.id = event->jball.which;
+			case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
 
-						JoystickEvent::Dispatch (&joystickEvent);
+				if (!SDLJoystick::IsAccelerometer(event->jbutton.which))
+				{
 
-					}
-					break;
+					joystickEvent.type = JOYSTICK_BUTTON_DOWN;
+					joystickEvent.index = event->jbutton.button;
+					joystickEvent.id = event->jbutton.which;
 
-				case SDL_JOYBUTTONDOWN:
+					JoystickEvent::Dispatch(&joystickEvent);
+				}
+				break;
 
-					if (!SDLJoystick::IsAccelerometer (event->jbutton.which)) {
+			case SDL_EVENT_JOYSTICK_BUTTON_UP:
 
-						joystickEvent.type = JOYSTICK_BUTTON_DOWN;
-						joystickEvent.index = event->jbutton.button;
-						joystickEvent.id = event->jbutton.which;
+				if (!SDLJoystick::IsAccelerometer(event->jbutton.which))
+				{
 
-						JoystickEvent::Dispatch (&joystickEvent);
+					joystickEvent.type = JOYSTICK_BUTTON_UP;
+					joystickEvent.index = event->jbutton.button;
+					joystickEvent.id = event->jbutton.which;
 
-					}
-					break;
+					JoystickEvent::Dispatch(&joystickEvent);
+				}
+				break;
 
-				case SDL_JOYBUTTONUP:
+			case SDL_EVENT_JOYSTICK_HAT_MOTION:
 
-					if (!SDLJoystick::IsAccelerometer (event->jbutton.which)) {
+				if (!SDLJoystick::IsAccelerometer(event->jhat.which))
+				{
 
-						joystickEvent.type = JOYSTICK_BUTTON_UP;
-						joystickEvent.index = event->jbutton.button;
-						joystickEvent.id = event->jbutton.which;
+					joystickEvent.type = JOYSTICK_HAT_MOVE;
+					joystickEvent.index = event->jhat.hat;
+					joystickEvent.eventValue = event->jhat.value;
+					joystickEvent.id = event->jhat.which;
 
-						JoystickEvent::Dispatch (&joystickEvent);
+					JoystickEvent::Dispatch(&joystickEvent);
+				}
+				break;
 
-					}
-					break;
+			case SDL_EVENT_JOYSTICK_ADDED:
 
-				case SDL_JOYHATMOTION:
+				if (SDLJoystick::Connect(event->jdevice.which))
+				{
 
-					if (!SDLJoystick::IsAccelerometer (event->jhat.which)) {
+					joystickEvent.type = JOYSTICK_CONNECT;
+					joystickEvent.id = SDLJoystick::GetInstanceID(event->jdevice.which);
 
-						joystickEvent.type = JOYSTICK_HAT_MOVE;
-						joystickEvent.index = event->jhat.hat;
-						joystickEvent.eventValue = event->jhat.value;
-						joystickEvent.id = event->jhat.which;
+					JoystickEvent::Dispatch(&joystickEvent);
+				}
+				break;
 
-						JoystickEvent::Dispatch (&joystickEvent);
+			case SDL_EVENT_JOYSTICK_REMOVED:
 
-					}
-					break;
+				if (!SDLJoystick::IsAccelerometer(event->jdevice.which))
+				{
 
-				case SDL_JOYDEVICEADDED:
+					joystickEvent.type = JOYSTICK_DISCONNECT;
+					joystickEvent.id = event->jdevice.which;
 
-					if (SDLJoystick::Connect (event->jdevice.which)) {
-
-						joystickEvent.type = JOYSTICK_CONNECT;
-						joystickEvent.id = SDLJoystick::GetInstanceID (event->jdevice.which);
-
-						JoystickEvent::Dispatch (&joystickEvent);
-
-					}
-					break;
-
-				case SDL_JOYDEVICEREMOVED:
-
-					if (!SDLJoystick::IsAccelerometer (event->jdevice.which)) {
-
-						joystickEvent.type = JOYSTICK_DISCONNECT;
-						joystickEvent.id = event->jdevice.which;
-
-						JoystickEvent::Dispatch (&joystickEvent);
-						SDLJoystick::Disconnect (event->jdevice.which);
-
-					}
-					break;
-
+					JoystickEvent::Dispatch(&joystickEvent);
+					SDLJoystick::Disconnect(event->jdevice.which);
+				}
+				break;
 			}
-
 		}
-
 	}
 
+	void SDLApplication::ProcessKeyEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessKeyEvent (SDL_Event* event) {
+		if (KeyEvent::callback)
+		{
 
-		if (KeyEvent::callback) {
+			switch (event->type)
+			{
 
-			switch (event->type) {
-
-				case SDL_KEYDOWN: keyEvent.type = KEY_DOWN; break;
-				case SDL_KEYUP: keyEvent.type = KEY_UP; break;
-
+			case SDL_EVENT_KEY_DOWN:
+				keyEvent.type = KEY_DOWN;
+				break;
+			case SDL_EVENT_KEY_UP:
+				keyEvent.type = KEY_UP;
+				break;
 			}
 
-			keyEvent.keyCode = event->key.keysym.sym;
-			keyEvent.modifier = event->key.keysym.mod;
+			keyEvent.keyCode = event->key.key;
+			keyEvent.modifier = event->key.mod;
 			keyEvent.windowID = event->key.windowID;
 
-			if (keyEvent.type == KEY_DOWN) {
+			if (keyEvent.type == KEY_DOWN)
+			{
 
-				if (keyEvent.keyCode == SDLK_CAPSLOCK) keyEvent.modifier |= KMOD_CAPS;
-				if (keyEvent.keyCode == SDLK_LALT) keyEvent.modifier |= KMOD_LALT;
-				if (keyEvent.keyCode == SDLK_LCTRL) keyEvent.modifier |= KMOD_LCTRL;
-				if (keyEvent.keyCode == SDLK_LGUI) keyEvent.modifier |= KMOD_LGUI;
-				if (keyEvent.keyCode == SDLK_LSHIFT) keyEvent.modifier |= KMOD_LSHIFT;
-				if (keyEvent.keyCode == SDLK_MODE) keyEvent.modifier |= KMOD_MODE;
-				if (keyEvent.keyCode == SDLK_NUMLOCKCLEAR) keyEvent.modifier |= KMOD_NUM;
-				if (keyEvent.keyCode == SDLK_RALT) keyEvent.modifier |= KMOD_RALT;
-				if (keyEvent.keyCode == SDLK_RCTRL) keyEvent.modifier |= KMOD_RCTRL;
-				if (keyEvent.keyCode == SDLK_RGUI) keyEvent.modifier |= KMOD_RGUI;
-				if (keyEvent.keyCode == SDLK_RSHIFT) keyEvent.modifier |= KMOD_RSHIFT;
-
+				if (keyEvent.keyCode == SDLK_CAPSLOCK)
+					keyEvent.modifier |= SDL_KMOD_CAPS;
+				if (keyEvent.keyCode == SDLK_LALT)
+					keyEvent.modifier |= SDL_KMOD_LALT;
+				if (keyEvent.keyCode == SDLK_LCTRL)
+					keyEvent.modifier |= SDL_KMOD_LCTRL;
+				if (keyEvent.keyCode == SDLK_LGUI)
+					keyEvent.modifier |= SDL_KMOD_LGUI;
+				if (keyEvent.keyCode == SDLK_LSHIFT)
+					keyEvent.modifier |= SDL_KMOD_LSHIFT;
+				if (keyEvent.keyCode == SDLK_MODE)
+					keyEvent.modifier |= SDL_KMOD_MODE;
+				if (keyEvent.keyCode == SDLK_NUMLOCKCLEAR)
+					keyEvent.modifier |= SDL_KMOD_NUM;
+				if (keyEvent.keyCode == SDLK_RALT)
+					keyEvent.modifier |= SDL_KMOD_RALT;
+				if (keyEvent.keyCode == SDLK_RCTRL)
+					keyEvent.modifier |= SDL_KMOD_RCTRL;
+				if (keyEvent.keyCode == SDLK_RGUI)
+					keyEvent.modifier |= SDL_KMOD_RGUI;
+				if (keyEvent.keyCode == SDLK_RSHIFT)
+					keyEvent.modifier |= SDL_KMOD_RSHIFT;
 			}
 
-			KeyEvent::Dispatch (&keyEvent);
-
+			KeyEvent::Dispatch(&keyEvent);
 		}
-
 	}
 
+	void SDLApplication::ProcessMouseEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessMouseEvent (SDL_Event* event) {
+		if (MouseEvent::callback)
+		{
 
-		if (MouseEvent::callback) {
+			switch (event->type)
+			{
 
-			switch (event->type) {
+			case SDL_EVENT_MOUSE_MOTION:
 
-				case SDL_MOUSEMOTION:
+				mouseEvent.type = MOUSE_MOVE;
+				mouseEvent.x = event->motion.x;
+				mouseEvent.y = event->motion.y;
+				mouseEvent.movementX = event->motion.xrel;
+				mouseEvent.movementY = event->motion.yrel;
+				break;
 
-					mouseEvent.type = MOUSE_MOVE;
-					mouseEvent.x = event->motion.x;
-					mouseEvent.y = event->motion.y;
-					mouseEvent.movementX = event->motion.xrel;
-					mouseEvent.movementY = event->motion.yrel;
-					break;
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 
-				case SDL_MOUSEBUTTONDOWN:
+				SDL_CaptureMouse(true);
 
-					SDL_CaptureMouse (SDL_TRUE);
+				mouseEvent.type = MOUSE_DOWN;
+				mouseEvent.button = event->button.button - 1;
+				mouseEvent.x = event->button.x;
+				mouseEvent.y = event->button.y;
+				mouseEvent.clickCount = event->button.clicks;
+				break;
 
-					mouseEvent.type = MOUSE_DOWN;
-					mouseEvent.button = event->button.button - 1;
-					mouseEvent.x = event->button.x;
-					mouseEvent.y = event->button.y;
-					mouseEvent.clickCount = event->button.clicks;
-					break;
+			case SDL_EVENT_MOUSE_BUTTON_UP:
 
-				case SDL_MOUSEBUTTONUP:
+				SDL_CaptureMouse(false);
 
-					SDL_CaptureMouse (SDL_FALSE);
+				mouseEvent.type = MOUSE_UP;
+				mouseEvent.button = event->button.button - 1;
+				mouseEvent.x = event->button.x;
+				mouseEvent.y = event->button.y;
+				mouseEvent.clickCount = event->button.clicks;
+				break;
 
-					mouseEvent.type = MOUSE_UP;
-					mouseEvent.button = event->button.button - 1;
-					mouseEvent.x = event->button.x;
-					mouseEvent.y = event->button.y;
-					mouseEvent.clickCount = event->button.clicks;
-					break;
+			case SDL_EVENT_MOUSE_WHEEL:
 
-				case SDL_MOUSEWHEEL:
-
-					mouseEvent.type = MOUSE_WHEEL;
-
-					if (event->wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
-
-						mouseEvent.x = -event->wheel.x;
-						mouseEvent.y = -event->wheel.y;
-
-					} else {
-
-						mouseEvent.x = event->wheel.x;
-						mouseEvent.y = event->wheel.y;
-
-					}
-					break;
-
+				ProcessMouseEvent (event);
+				break;
 			}
 
 			mouseEvent.windowID = event->button.windowID;
-			MouseEvent::Dispatch (&mouseEvent);
-
+			MouseEvent::Dispatch(&mouseEvent);
 		}
-
 	}
 
+#if defined(ANDROID) || defined(IPHONE)
+	void SDLApplication::ProcessSensorEvent(SDL_Event *event)
+	{
 
-	#if defined(ANDROID) || defined (IPHONE)
-	void SDLApplication::ProcessSensorEvent(SDL_Event* event) {
+		if (SensorEvent::callback)
+		{
 
-		if (SensorEvent::callback) {
-
-			if (event->sensor.which == gyroscopeSensorID) {
+			if (event->sensor.which == gyroscopeSensorID)
+			{
 
 				sensorEvent.type = SENSOR_GYROSCOPE;
 				sensorEvent.id = event->sensor.which;
@@ -751,8 +745,9 @@ namespace lime {
 				sensorEvent.y = event->sensor.data[1];
 				sensorEvent.z = event->sensor.data[2];
 				SensorEvent::Dispatch(&sensorEvent);
-
-			} else if (event->sensor.which == accelerometerSensorID) {
+			}
+			else if (event->sensor.which == accelerometerSensorID)
+			{
 
 				sensorEvent.type = SENSOR_ACCELEROMETER;
 				sensorEvent.id = event->sensor.which;
@@ -760,181 +755,196 @@ namespace lime {
 				sensorEvent.y = event->sensor.data[1];
 				sensorEvent.z = event->sensor.data[2];
 				SensorEvent::Dispatch(&sensorEvent);
-
 			}
-
 		}
-
 	}
-	#endif
+#endif
 
+	void SDLApplication::ProcessTextEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessTextEvent (SDL_Event* event) {
+		if (TextEvent::callback)
+		{
 
-		if (TextEvent::callback) {
+			switch (event->type)
+			{
 
-			switch (event->type) {
+			case SDL_EVENT_TEXT_INPUT:
 
-				case SDL_TEXTINPUT:
+				textEvent.type = TEXT_INPUT;
+				break;
 
-					textEvent.type = TEXT_INPUT;
-					break;
+			case SDL_EVENT_TEXT_EDITING:
 
-				case SDL_TEXTEDITING:
-
-					textEvent.type = TEXT_EDIT;
-					textEvent.start = event->edit.start;
-					textEvent.length = event->edit.length;
-					break;
-
+				textEvent.type = TEXT_EDIT;
+				textEvent.start = event->edit.start;
+				textEvent.length = event->edit.length;
+				break;
 			}
 
-			if (textEvent.text) {
+			if (textEvent.text)
+			{
 
-				free (textEvent.text);
-
+				free(textEvent.text);
 			}
 
-			textEvent.text = (vbyte*)malloc (strlen (event->text.text) + 1);
-			strcpy ((char*)textEvent.text, event->text.text);
+			textEvent.text = (vbyte *)malloc(strlen(event->text.text) + 1);
+			strcpy((char *)textEvent.text, event->text.text);
 
 			textEvent.windowID = event->text.windowID;
-			TextEvent::Dispatch (&textEvent);
-
+			TextEvent::Dispatch(&textEvent);
 		}
-
 	}
 
+	void SDLApplication::ProcessTouchEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessTouchEvent (SDL_Event* event) {
+		if (TouchEvent::callback)
+		{
 
-		if (TouchEvent::callback) {
+			switch (event->type)
+			{
 
-			switch (event->type) {
+			case SDL_EVENT_FINGER_MOTION:
 
-				case SDL_FINGERMOTION:
+				touchEvent.type = TOUCH_MOVE;
+				break;
 
-					touchEvent.type = TOUCH_MOVE;
-					break;
+			case SDL_EVENT_FINGER_DOWN:
 
-				case SDL_FINGERDOWN:
+				touchEvent.type = TOUCH_START;
+				break;
 
-					touchEvent.type = TOUCH_START;
-					break;
+			case SDL_EVENT_FINGER_UP:
 
-				case SDL_FINGERUP:
-
-					touchEvent.type = TOUCH_END;
-					break;
-
+				touchEvent.type = TOUCH_END;
+				break;
 			}
 
 			touchEvent.x = event->tfinger.x;
 			touchEvent.y = event->tfinger.y;
-			touchEvent.id = event->tfinger.fingerId;
+			touchEvent.id = event->tfinger.fingerID;
 			touchEvent.dx = event->tfinger.dx;
 			touchEvent.dy = event->tfinger.dy;
 			touchEvent.pressure = event->tfinger.pressure;
-			touchEvent.device = event->tfinger.touchId;
+			touchEvent.device = event->tfinger.touchID;
 
-			TouchEvent::Dispatch (&touchEvent);
-
+			TouchEvent::Dispatch(&touchEvent);
 		}
-
 	}
 
+	void SDLApplication::ProcessWindowEvent(SDL_Event *event)
+	{
 
-	void SDLApplication::ProcessWindowEvent (SDL_Event* event) {
+		if (WindowEvent::callback)
+		{
 
-		if (WindowEvent::callback) {
+			switch (event->window.type)
+			{
 
-			switch (event->window.event) {
+			case SDL_EVENT_WINDOW_SHOWN:
+				windowEvent.type = WINDOW_SHOW;
+				break;
+			case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+				windowEvent.type = WINDOW_CLOSE;
+				break;
+			case SDL_EVENT_WINDOW_HIDDEN:
+				windowEvent.type = WINDOW_HIDE;
+				break;
+			case SDL_EVENT_WINDOW_MOUSE_ENTER:
+				windowEvent.type = WINDOW_ENTER;
+				break;
+			case SDL_EVENT_WINDOW_FOCUS_GAINED:
+				windowEvent.type = WINDOW_FOCUS_IN;
+				break;
+			case SDL_EVENT_WINDOW_FOCUS_LOST:
+				windowEvent.type = WINDOW_FOCUS_OUT;
+				break;
+			case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+				windowEvent.type = WINDOW_LEAVE;
+				break;
+			case SDL_EVENT_WINDOW_MAXIMIZED:
+				windowEvent.type = WINDOW_MAXIMIZE;
+				break;
+			case SDL_EVENT_WINDOW_MINIMIZED:
+				windowEvent.type = WINDOW_MINIMIZE;
+				break;
+			case SDL_EVENT_WINDOW_EXPOSED:
+				windowEvent.type = WINDOW_EXPOSE;
+				break;
 
-				case SDL_WINDOWEVENT_SHOWN: windowEvent.type = WINDOW_SHOW; break;
-				case SDL_WINDOWEVENT_CLOSE: windowEvent.type = WINDOW_CLOSE; break;
-				case SDL_WINDOWEVENT_HIDDEN: windowEvent.type = WINDOW_HIDE; break;
-				case SDL_WINDOWEVENT_ENTER: windowEvent.type = WINDOW_ENTER; break;
-				case SDL_WINDOWEVENT_FOCUS_GAINED: windowEvent.type = WINDOW_FOCUS_IN; break;
-				case SDL_WINDOWEVENT_FOCUS_LOST: windowEvent.type = WINDOW_FOCUS_OUT; break;
-				case SDL_WINDOWEVENT_LEAVE: windowEvent.type = WINDOW_LEAVE; break;
-				case SDL_WINDOWEVENT_MAXIMIZED: windowEvent.type = WINDOW_MAXIMIZE; break;
-				case SDL_WINDOWEVENT_MINIMIZED: windowEvent.type = WINDOW_MINIMIZE; break;
-				case SDL_WINDOWEVENT_EXPOSED: windowEvent.type = WINDOW_EXPOSE; break;
+			case SDL_EVENT_WINDOW_MOVED:
 
-				case SDL_WINDOWEVENT_MOVED:
+				windowEvent.type = WINDOW_MOVE;
+				windowEvent.x = event->window.data1;
+				windowEvent.y = event->window.data2;
+				break;
 
-					windowEvent.type = WINDOW_MOVE;
-					windowEvent.x = event->window.data1;
-					windowEvent.y = event->window.data2;
-					break;
+			case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 
-				case SDL_WINDOWEVENT_SIZE_CHANGED:
+				windowEvent.type = WINDOW_RESIZE;
+				windowEvent.width = event->window.data1;
+				windowEvent.height = event->window.data2;
+				break;
 
-					windowEvent.type = WINDOW_RESIZE;
-					windowEvent.width = event->window.data1;
-					windowEvent.height = event->window.data2;
-					break;
-
-				case SDL_WINDOWEVENT_RESTORED: windowEvent.type = WINDOW_RESTORE; break;
-
+			case SDL_EVENT_WINDOW_RESTORED:
+				windowEvent.type = WINDOW_RESTORE;
+				break;
 			}
 
 			windowEvent.windowID = event->window.windowID;
-			WindowEvent::Dispatch (&windowEvent);
-
+			WindowEvent::Dispatch(&windowEvent);
 		}
-
 	}
 
-
-	int SDLApplication::Quit () {
+	int SDLApplication::Quit()
+	{
 		applicationEvent.type = EXIT;
-		ApplicationEvent::Dispatch (&applicationEvent);
+		ApplicationEvent::Dispatch(&applicationEvent);
 
-		SDL_Quit ();
+		SDL_Quit();
 		return 0;
-
 	}
 
+	void SDLApplication::RegisterWindow(SDLWindow *window)
+	{
 
-	void SDLApplication::RegisterWindow (SDLWindow *window) {
-
-		#ifdef IPHONE
-		SDL_iPhoneSetAnimationCallback (window->sdlWindow, 1, UpdateFrame, NULL);
-		#endif
-
+#ifdef IPHONE
+		SDL_iPhoneSetAnimationCallback(window->sdlWindow, 1, UpdateFrame, NULL);
+#endif
 	}
 
+	void SDLApplication::SetFrameRate(double frameRate)
+	{
 
-	void SDLApplication::SetFrameRate (double frameRate) {
-
-		if (frameRate > 0) {
+		if (frameRate > 0)
+		{
 
 			framePeriod = 1000.0 / frameRate;
-
-		} else {
+		}
+		else
+		{
 
 			framePeriod = 0.0;
-
 		}
-
 	}
 
-	void PushUpdate(void) {
+	void PushUpdate(void)
+	{
 		SDL_Event event;
 		SDL_UserEvent userevent;
-		userevent.type = SDL_USEREVENT;
+		userevent.type = SDL_EVENT_USER;
 		userevent.code = 0;
 		userevent.data1 = NULL;
 		userevent.data2 = NULL;
-		event.type = SDL_USEREVENT;
+		event.type = SDL_EVENT_USER;
 		event.user = userevent;
 
-		SDL_PushEvent (&event);
+		SDL_PushEvent(&event);
 	}
 
-
-	bool SDLApplication::Update () {
+	bool SDLApplication::Update()
+	{
 		// i have no idea why this makes fps
 		// more consistent, but i am happy regardless.
 		lastUpdate = currentUpdate;
@@ -945,16 +955,18 @@ namespace lime {
 		double dtLimit = framePeriod * 4;
 		if (dt > dtLimit)
 			dt = dtLimit;
-		
+
 		nextUpdate += dt;
 
-		if(nextUpdate >= framePeriod) {
+		if (nextUpdate >= framePeriod)
+		{
 			PushUpdate();
 			nextUpdate -= framePeriod;
 		}
 		SDL_Event event;
-		while (SDL_PollEvent (&event)) {
-			HandleEvent (&event);
+		while (SDL_PollEvent(&event))
+		{
+			HandleEvent(&event);
 			event.type = -1;
 			if (!active)
 				return active;
@@ -962,28 +974,25 @@ namespace lime {
 		return active;
 	}
 
-
-	void SDLApplication::UpdateFrame () {
-		currentApplication->Update ();
+	void SDLApplication::UpdateFrame()
+	{
+		currentApplication->Update();
 	}
 
+	void SDLApplication::UpdateFrame(void *)
+	{
 
-	void SDLApplication::UpdateFrame (void*) {
-
-		UpdateFrame ();
-
+		UpdateFrame();
 	}
 
-	Application* CreateApplication () {
+	Application *CreateApplication()
+	{
 
-		return new SDLApplication ();
-
+		return new SDLApplication();
 	}
-
 
 }
 
-
 #ifdef ANDROID
-int SDL_main (int argc, char *argv[]) { return 0; }
+int SDL_main(int argc, char *argv[]) { return 0; }
 #endif
