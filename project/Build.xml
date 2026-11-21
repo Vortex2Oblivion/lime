@@ -1,7 +1,9 @@
 <xml>
 
 	<set name="PLATFORM" value="android-21" if="android" />
-	<set name="HXCPP_CPP11" value="1" />
+	<set name="HXCPP_CPP17" value="1" />
+	<setenv name="MACOSX_DEPLOYMENT_TARGET" value="10.13" if="mac" />
+
 
 	<include name="${HXCPP}/build-tool/BuildCommon.xml" />
 
