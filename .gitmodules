@@ -58,3 +58,6 @@
 [submodule "project/lib/sdl"]
 	path = project/lib/sdl
 	url = https://github.com/libsdl-org/SDL
+[submodule "project/lib/freetype"]
+	path = project/lib/freetype
+	url = https://gitlab.com/freetype/freetype
