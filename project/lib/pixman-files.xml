@@ -12,7 +12,7 @@
 		<compilerflag value="-DPIXMAN_NO_TLS" if="windows" />
 
 		<compilerflag value="-DNATIVE_TOOLKIT_HAVE_PNG" if="NATIVE_TOOLKIT_HAVE_PNG" />
-		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/png" if="NATIVE_TOOLKIT_HAVE_PNG" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libpng" if="NATIVE_TOOLKIT_HAVE_PNG" />
 
 		<compilerflag value="-DUSE_ARM_NEON=1" if="PIXMAN_ARM_NEON" />
 		<compilerflag value="-DUSE_ARM_SIMD=1" if="PIXMAN_ARM_SIMD" />
