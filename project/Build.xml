@@ -460,27 +460,40 @@
 
 				<lib name="-lgc" if="LIME_NEKO" />
 				<lib name="-lm" if="LIME_NEKO" />
-
 				<lib name="-L../templates/bin/hl/${BINDIR}" if="LIME_HASHLINK" />
 				<lib name="-lhl" if="LIME_HASHLINK" />
 
 			</section>
 
 			<section if="mac">
+<vflag name="-install_name" value="@executable_path/lime.hdll" if="LIME_HASHLINK"/>
+				<!--
+					starting in xcode 15, rpath doesn't automatically include
+					/usr/local/lib, but we need it for neko
+				-->
+				<vflag name="-rpath" value="/usr/local/lib" />
+				<vflag name="-rpath" value="/opt/homebrew/lib" if="HXCPP_ARM64"/>
 
 				<vflag name="-l" value="iconv" />
 				<vflag name="-framework" value="IOKit" />
 				<vflag name="-framework" value="Foundation" />
-				<vflag name="-framework" value="CoreAudio" />
-				<vflag name="-framework" value="CoreVideo" />
-				<vflag name="-framework" value="Cocoa" />
-				<vflag name="-framework" value="OpenGL" />
+				<vflag name="-framework" value="AppKit" />
 				<vflag name="-framework" value="AudioToolbox" />
 				<vflag name="-framework" value="AudioUnit" />
-				<vflag name="-framework" value="ForceFeedback" />
+				<vflag name="-framework" value="AVFoundation" />
 				<vflag name="-framework" value="Carbon" />
-				<vflag name="-framework" value="AppKit" />
+				<vflag name="-framework" value="Cocoa" />
+				<vflag name="-framework" value="QuartzCore" />
+				<vflag name="-framework" value="CoreAudio" />
+				<vflag name="-framework" value="CoreVideo" />
+				<vflag name="-framework" value="CoreMedia" />
+     		    <vflag name="-framework" value="CoreHaptics" />
+				<vflag name="-framework" value="ForceFeedback" />
+				<vflag name="-framework" value="GameController" />
 				<vflag name="-framework" value="OpenAL" />
+				<vflag name="-framework" value="OpenGL" />
+				<vflag name="-framework" value="Metal" />
+				<vflag name="-framework" value="UniformTypeIdentifiers" />
 				<vflag name="-framework" value="SystemConfiguration" />
 
 				<lib name="/opt/local/lib/libgc.a" if="LIME_NEKO" />
@@ -488,7 +501,6 @@
 
 				<lib name="-L../templates/bin/hl/${BINDIR}" if="LIME_HASHLINK" />
 				<lib name="-lhl" if="LIME_HASHLINK" />
-
 			</section>
 
 			<section if="android">
