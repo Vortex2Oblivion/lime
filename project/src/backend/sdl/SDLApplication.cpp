@@ -41,7 +41,7 @@ namespace lime
 		initFlags |= SDL_INIT_AUDIO;
 #endif
 
-		if (SDL_Init(initFlags) != 0)
+		if (!SDL_Init(initFlags))
 		{
 
 			printf("Could not initialize SDL: %s.\n", SDL_GetError());
