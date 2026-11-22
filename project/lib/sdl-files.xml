@@ -143,6 +143,7 @@
         <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/events/SDL_categories.c" />
         <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/haptic/SDL_haptic.c" />
         <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/haptic/hidapi/SDL_hidapihaptic.c" />
+        <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/haptic/hidapi/SDL_hidapihaptic_lg4ff.c" />
         <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/notification/SDL_notification.c" />
         <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/events/SDL_notificationevents.c" />
 
@@ -598,6 +599,7 @@
             <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/power/macos/SDL_syspower.c" />
             <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/camera/coremedia/SDL_camera_coremedia.m" />
             <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/tray/cocoa/SDL_tray.m" />
+            <file name="${NATIVE_TOOLKIT_PATH}/sdl/src/core/macos/SDL_ioreg.c" />
 
         </section>
 
