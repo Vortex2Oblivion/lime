@@ -485,9 +485,14 @@ class CommandLineTools
 				}
 
 			case MAC:
-				// if (System.hostArchitecture == X64) {
-
-				untyped $loader.path = $array(path + "Mac64/", $loader.path);
+				if (System.hostArchitecture == X64)
+				{
+					untyped $loader.path = $array(path + "Mac64/", $loader.path);
+				}
+				else if (System.hostArchitecture == ARM64)
+				{
+					untyped $loader.path = $array(path + "MacArm64/", $loader.path);
+				}
 
 			// } else {
 
