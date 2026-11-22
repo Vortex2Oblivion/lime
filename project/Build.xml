@@ -67,13 +67,29 @@
 
 		<section if="LIME_CAIRO">
 
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include/configs/default/"
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/src/" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/default/"
 				unless="windows || mac || linux" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include/configs/linux/" if="linux" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include/configs/windows/"
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/linux/" if="linux" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/windows/"
 				if="windows" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include/configs/mac/" if="mac" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/mac/" if="mac" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libcairo/src/" />
+
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/freetype/include/" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/freetype/include/" />
+
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/pixman/pixman/" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/pixman/pixman/" />
+
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libcairo/include" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libcairo/include/configs/default/"
+				unless="windows || mac || linux" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libcairo/include/configs/linux/"
+				if="linux" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libcairo/include/configs/windows/"
+				if="windows" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libcairo/include/configs/mac/" if="mac" />
 			<compilerflag value="-DLIME_CAIRO" />
 			<compilerflag value="-DHAVE_CONFIG_H" />
 			<compilerflag value="-DCAIRO_WIN32_STATIC_BUILD" if="windows" />
@@ -338,7 +354,7 @@
 
 	</files>
 
-	<include name="lib/cairo/files.xml" />
+	<include name="lib/cairo-files.xml" />
 	<include name="lib/curl-files.xml" />
 	<include name="lib/efsw/files.xml" />
 	<include name="lib/faudio/files.xml" if="LIME_FAUDIO" />

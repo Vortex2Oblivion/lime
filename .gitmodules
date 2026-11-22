@@ -16,12 +16,6 @@
 [submodule "project/lib/harfbuzz"]
 	path = project/lib/harfbuzz
 	url = https://github.com/openfl/libharfbuzz
-[submodule "project/lib/cairo"]
-	path = project/lib/cairo
-	url = https://github.com/openfl/libcairo
-[submodule "project/lib/pixman"]
-	path = project/lib/pixman
-	url = https://github.com/openfl/libpixman
 [submodule "project/lib/lzma"]
 	path = project/lib/lzma
 	url = https://github.com/openfl/liblzma
@@ -61,3 +55,9 @@
 [submodule "project/lib/libpng"]
 	path = project/lib/libpng
 	url = https://github.com/pnggroup/libpng
+[submodule "project/lib/libpixman"]
+	path = project/lib/libpixman
+	url = http://gitlab.freedesktop.org/pixman/pixman
+[submodule "project/lib/libcairo"]
+	path = project/lib/libcairo
+	url = https://gitlab.freedesktop.org/cairo/cairo
