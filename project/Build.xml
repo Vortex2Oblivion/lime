@@ -323,6 +323,7 @@
 		<file name="src/system/CFFI.cpp" />
 		<file name="src/system/CFFIPointer.cpp" />
 		<file name="src/system/ClipboardEvent.cpp" />
+		<file name="src/system/Display.cpp" />
 		<file name="src/system/DisplayMode.cpp" />
 		<file name="src/system/JNI.cpp" if="android" />
 		<file name="src/system/Locale.cpp" unless="mac || ios" />
@@ -470,13 +471,13 @@
 			</section>
 
 			<section if="mac">
-<vflag name="-install_name" value="@executable_path/lime.hdll" if="LIME_HASHLINK"/>
+				<vflag name="-install_name" value="@executable_path/lime.hdll" if="LIME_HASHLINK" />
 				<!--
 					starting in xcode 15, rpath doesn't automatically include
 					/usr/local/lib, but we need it for neko
 				-->
 				<vflag name="-rpath" value="/usr/local/lib" />
-				<vflag name="-rpath" value="/opt/homebrew/lib" if="HXCPP_ARM64"/>
+				<vflag name="-rpath" value="/opt/homebrew/lib" if="HXCPP_ARM64" />
 
 				<vflag name="-l" value="iconv" />
 				<vflag name="-framework" value="IOKit" />
@@ -491,7 +492,7 @@
 				<vflag name="-framework" value="CoreAudio" />
 				<vflag name="-framework" value="CoreVideo" />
 				<vflag name="-framework" value="CoreMedia" />
-     		    <vflag name="-framework" value="CoreHaptics" />
+				<vflag name="-framework" value="CoreHaptics" />
 				<vflag name="-framework" value="ForceFeedback" />
 				<vflag name="-framework" value="GameController" />
 				<vflag name="-framework" value="OpenAL" />

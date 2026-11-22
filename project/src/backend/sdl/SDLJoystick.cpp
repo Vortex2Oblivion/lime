@@ -60,7 +60,7 @@ namespace lime {
 		#if defined(IPHONE) || defined(ANDROID) || defined(TVOS)
 		for (int i = 0; i < SDL_NumJoysticks (); i++) {
 
-			if (strstr (SDL_GetJoystickNameForIndex (i), "Accelerometer")) {
+			if (strstr (SDL_JoystickNameForIndex (i), "Accelerometer")) {
 
 				accelerometer = SDL_JoystickOpen (i);
 				accelerometerID = SDL_JoystickInstanceID (accelerometer);
@@ -83,7 +83,7 @@ namespace lime {
 	const char* Joystick::GetDeviceGUID (int id) {
 
 		char* guid = new char[64];
-		SDL_GUIDToString (SDL_GetJoystickGUID (joysticks[id]), guid, 64);
+		SDL_GUIDToString  (SDL_GetJoystickGUID  (joysticks[id]), guid, 64);
 		return guid;
 
 	}

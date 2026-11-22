@@ -36,12 +36,12 @@ namespace lime
 
 	SDLApplication::SDLApplication()
 	{
-		Uint32 initFlags = SDL_INIT_VIDEO | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK;
+		Uint32 initFlags = SDL_INIT_VIDEO | SDL_INIT_GAMEPAD /*| SDL_INIT_TIMER*/ | SDL_INIT_JOYSTICK;
 #if defined(LIME_MOJOAL) || defined(LIME_OPENALSOFT)
 		initFlags |= SDL_INIT_AUDIO;
 #endif
 
-		if (!SDL_Init(initFlags))
+		if (SDL_Init(initFlags) != 0)
 		{
 
 			printf("Could not initialize SDL: %s.\n", SDL_GetError());
@@ -72,10 +72,11 @@ namespace lime
 		TouchEvent touchEvent;
 		WindowEvent windowEvent;
 
+#if defined(ANDROID) || defined(IPHONE)
+		SDL_EventState(SDL_SENSORUPDATE, SDL_ENABLE);
+#endif
+
 		SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, true);
-		SDL_SetEventEnabled(SDL_EVENT_DROP_TEXT, true);
-		SDL_SetEventEnabled(SDL_EVENT_DROP_BEGIN, true);
-		SDL_SetEventEnabled(SDL_EVENT_DROP_COMPLETE, true);
 
 #if defined(ANDROID) || defined(IPHONE)
 		InitializeSensors();
@@ -346,46 +347,6 @@ namespace lime
 			ProcessWindowEvent(event);
 			break;
 
-		case SDL_EVENT_WINDOW_EXPOSED:
-
-			ProcessWindowEvent(event);
-
-			if (!inBackground)
-			{
-
-				RenderEvent::Dispatch(&renderEvent);
-			}
-
-			break;
-
-		case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-
-			ProcessWindowEvent(event);
-
-			if (!inBackground)
-			{
-
-				RenderEvent::Dispatch(&renderEvent);
-			}
-
-			break;
-
-		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-
-			ProcessWindowEvent(event);
-
-			// Avoid handling SDL_EVENT_QUIT if in response to window.close
-			SDL_Event event;
-
-			if (SDL_PollEvent(&event))
-			{
-
-				if (event.type != SDL_EVENT_QUIT)
-				{
-
-					HandleEvent(&event);
-				}
-			}
 			break;
 
 		case SDL_EVENT_QUIT:
@@ -421,8 +382,27 @@ namespace lime
 		if (DropEvent::callback)
 		{
 
-			dropEvent.type = DROP_FILE;
-			dropEvent.file = (vbyte *)event->drop.data;
+			switch (event->type)
+			{
+			case SDL_EVENT_DROP_FILE:
+				dropEvent.type = DROP_FILE;
+				dropEvent.file = (vbyte *)event->drop.data;
+				break;
+			case SDL_EVENT_DROP_TEXT:
+				dropEvent.type = DROP_TEXT;
+				dropEvent.file = (vbyte *)event->drop.data;
+				break;
+			case SDL_EVENT_DROP_BEGIN:
+				dropEvent.type = DROP_BEGIN;
+				dropEvent.file = 0;
+				break;
+			case SDL_EVENT_DROP_COMPLETE:
+				dropEvent.type = DROP_COMPLETE;
+				dropEvent.file = 0;
+				break;
+			default:
+				break;
+			}
 
 			DropEvent::Dispatch(&dropEvent);
 			SDL_free(dropEvent.file);
@@ -720,7 +700,20 @@ namespace lime
 
 			case SDL_EVENT_MOUSE_WHEEL:
 
-				ProcessMouseEvent (event);
+				mouseEvent.type = MOUSE_WHEEL;
+
+				if (event->wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+				{
+
+					mouseEvent.x = -event->wheel.x;
+					mouseEvent.y = -event->wheel.y;
+				}
+				else
+				{
+
+					mouseEvent.x = event->wheel.x;
+					mouseEvent.y = event->wheel.y;
+				}
 				break;
 			}
 
@@ -839,7 +832,7 @@ namespace lime
 		if (WindowEvent::callback)
 		{
 
-			switch (event->window.type)
+			switch (event->type)
 			{
 
 			case SDL_EVENT_WINDOW_SHOWN:
@@ -881,12 +874,15 @@ namespace lime
 				break;
 
 			case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+			{
 
+				SDL_Window *sdlWindow = SDL_GetWindowFromID(event->window.windowID);
+				float scale = SDL_GetWindowDisplayScale(sdlWindow);
 				windowEvent.type = WINDOW_RESIZE;
-				windowEvent.width = event->window.data1;
-				windowEvent.height = event->window.data2;
+				windowEvent.width = (int)(event->window.data1 / scale);
+				windowEvent.height = (int)(event->window.data2 / scale);
 				break;
-
+			}
 			case SDL_EVENT_WINDOW_RESTORED:
 				windowEvent.type = WINDOW_RESTORE;
 				break;
@@ -902,7 +898,7 @@ namespace lime
 		applicationEvent.type = EXIT;
 		ApplicationEvent::Dispatch(&applicationEvent);
 
-		SDL_Quit();
+		SDL_Quit ();
 		return 0;
 	}
 

@@ -1,6 +1,8 @@
+#include <cstddef>
 #include <graphics/PixelFormat.h>
 #include <math/Rectangle.h>
 #include <system/Clipboard.h>
+#include <system/Display.h>
 #include <system/DisplayMode.h>
 #include <system/JNI.h>
 #include <system/System.h>
@@ -31,8 +33,11 @@
 #endif
 #endif
 
-#include <SDL.h>
-#include <SDL_iostream.h>
+#ifdef ANDROID
+#include <android/asset_manager_jni.h>
+#endif
+
+#include <SDL3/SDL.h>
 #include <string>
 
 #ifdef HX_WINDOWS
@@ -49,16 +54,13 @@ namespace lime {
 	static int id_dpi;
 	static int id_height;
 	static int id_name;
+	static int id_orientation;
 	static int id_pixelFormat;
 	static int id_refreshRate;
 	static int id_supportedModes;
 	static int id_width;
-	static int id_orientation;
-
+	static int id_safeArea;
 	static bool init = false;
-
-	static double performanceFrequency = -1.0;
-	static double performanceCounter = -1.0;
 
 
 	const char* Clipboard::GetText () {
@@ -77,7 +79,7 @@ namespace lime {
 
 	bool Clipboard::SetText (const char* text) {
 
-		return (SDL_SetClipboardText (text) == 0);
+		return (SDL_SetClipboardText (text));
 
 	}
 
@@ -85,7 +87,7 @@ namespace lime {
 	void *JNI::GetEnv () {
 
 		#ifdef ANDROID
-		return SDL_AndroidGetJNIEnv ();
+		return SDL_GetAndroidJNIEnv ();
 		#else
 		return 0;
 		#endif
@@ -302,7 +304,7 @@ namespace lime {
 		if (useCFFIValue) {
 
 			if (!init) {
-				// display shit
+
 				id_bounds = val_id ("bounds");
 				id_currentMode = val_id ("currentMode");
 				id_dpi = val_id ("dpi");
@@ -313,30 +315,40 @@ namespace lime {
 				id_refreshRate = val_id ("refreshRate");
 				id_supportedModes = val_id ("supportedModes");
 				id_width = val_id ("width");
-
-				performanceFrequency = (double)SDL_GetPerformanceFrequency();
-				performanceCounter = (double)SDL_GetPerformanceCounter();
-
+				id_safeArea = val_id ("safeArea");
 				init = true;
 
 			}
 
-			int numDisplays = GetNumDisplays ();
+			if (id == 0) {
 
-			if (id < 0 || id >= numDisplays) {
+				return alloc_null ();
+
+			}
+
+			const char* displayName = SDL_GetDisplayName (id);
+			if (displayName == NULL) {
 
 				return alloc_null ();
 
 			}
 
 			value display = alloc_empty_object ();
-			alloc_field (display, id_name, alloc_string (SDL_GetDisplayName (id)));
+			alloc_field (display, id_name, alloc_string (displayName));
 
 			SDL_Rect bounds = { 0, 0, 0, 0 };
 			SDL_GetDisplayBounds (id, &bounds);
 			alloc_field (display, id_bounds, Rectangle (bounds.x, bounds.y, bounds.w, bounds.h).Value ());
 
-					float dpi = 72.0f;
+			Rectangle safeAreaInsets;
+			Display::GetSafeAreaInsets(id - 1, &safeAreaInsets);
+			alloc_field (display, id_safeArea,
+				Rectangle (bounds.x + safeAreaInsets.x,
+					bounds.y + safeAreaInsets.y,
+					bounds.w - safeAreaInsets.x - safeAreaInsets.width,
+					bounds.h - safeAreaInsets.y - safeAreaInsets.height).Value ());
+
+			float dpi = 72.0f;
 
 			#ifndef EMSCRIPTEN
 			// Based on SDL2_Compat
@@ -391,15 +403,15 @@ namespace lime {
 			alloc_field (display, id_currentMode, (value)mode.Value ());
 
 			int numDisplayModes;
-			auto displays = SDL_GetFullscreenDisplayModes (id, &numDisplayModes);
+			SDL_DisplayMode **displayModes = SDL_GetFullscreenDisplayModes (id, &numDisplayModes);
 			value supportedModes = alloc_array (numDisplayModes);
 
 			for (int i = 0; i < numDisplayModes; i++) {
 
-				SDL_DisplayMode *sdlDisplayMode = displays[i];
+				SDL_DisplayMode *sdlDisplayMode = displayModes[i];
 				mode.height = sdlDisplayMode->h;
 
-				switch (displayMode->format) {
+				switch (sdlDisplayMode->format) {
 
 					case SDL_PIXELFORMAT_ARGB8888:
 
@@ -418,8 +430,8 @@ namespace lime {
 
 				}
 
-				mode.refreshRate = displayMode->refresh_rate;
-				mode.width = displayMode->w;
+				mode.refreshRate = sdlDisplayMode->refresh_rate;
+				mode.width = sdlDisplayMode->w;
 
 				val_array_set_i (supportedModes, i, (value)mode.Value ());
 
@@ -430,28 +442,28 @@ namespace lime {
 
 		} else {
 
-			if (!init) {
-				performanceFrequency = (double)SDL_GetPerformanceFrequency();
-				performanceCounter = (double)SDL_GetPerformanceCounter();
-
-				init = true;
-			}
-
 			const int id_bounds = hl_hash_utf8 ("bounds");
 			const int id_currentMode = hl_hash_utf8 ("currentMode");
 			const int id_dpi = hl_hash_utf8 ("dpi");
 			const int id_height = hl_hash_utf8 ("height");
 			const int id_name = hl_hash_utf8 ("name");
+			const int id_orientation = hl_hash_utf8 ("orientation");
 			const int id_pixelFormat = hl_hash_utf8 ("pixelFormat");
 			const int id_refreshRate = hl_hash_utf8 ("refreshRate");
 			const int id_supportedModes = hl_hash_utf8 ("supportedModes");
 			const int id_width = hl_hash_utf8 ("width");
+			const int id_safeArea = hl_hash_utf8 ("safeArea");
 			const int id_x = hl_hash_utf8 ("x");
 			const int id_y = hl_hash_utf8 ("y");
 
-			int numDisplays = GetNumDisplays ();
+			if (id == 0) {
 
-			if (id < 0 || id >= numDisplays) {
+				return 0;
+
+			}
+
+			const char* displayName = SDL_GetDisplayName (id);
+			if (displayName == NULL) {
 
 				return 0;
 
@@ -459,7 +471,6 @@ namespace lime {
 
 			vdynamic* display = (vdynamic*)hl_alloc_dynobj ();
 
-			const char* displayName = SDL_GetDisplayName (id);
 			char* _displayName = (char*)malloc(strlen(displayName) + 1);
 			strcpy (_displayName, displayName);
 			hl_dyn_setp (display, id_name, &hlt_bytes, _displayName);
@@ -475,8 +486,17 @@ namespace lime {
 
 			hl_dyn_setp (display, id_bounds, &hlt_dynobj, _bounds);
 
-float dpi = 72.0f;
+			Rectangle safeAreaInsets;
+			Display::GetSafeAreaInsets(id - 1, &safeAreaInsets);
+			vdynamic* _safeArea = (vdynamic*)hl_alloc_dynobj ();
+			hl_dyn_seti (_safeArea, id_x, &hlt_i32, bounds.x + safeAreaInsets.x);
+			hl_dyn_seti (_safeArea, id_y, &hlt_i32, bounds.y + safeAreaInsets.y);
+			hl_dyn_seti (_safeArea, id_width, &hlt_i32, bounds.w - safeAreaInsets.x - safeAreaInsets.width);
+			hl_dyn_seti (_safeArea, id_height, &hlt_i32, bounds.h - safeAreaInsets.y - safeAreaInsets.height);
 
+			hl_dyn_setp (display, id_safeArea, &hlt_dynobj, _safeArea);
+
+			float dpi = 72.0;
 			#ifndef EMSCRIPTEN
 			// Based on SDL2_Compat
 			float pixelDensity = SDL_GetDesktopDisplayMode(id)->pixel_density;
@@ -493,11 +513,14 @@ float dpi = 72.0f;
 				dpi = pixelDensity * contentScale * 96.0f;
 				#endif
 			#endif
-
 			hl_dyn_setf (display, id_dpi, dpi);
 
-			auto displayMode = SDL_GetDesktopDisplayMode (id);
+			SDL_DisplayOrientation orientation = SDL_GetCurrentDisplayOrientation(id);
+			hl_dyn_seti (display, id_orientation, &hlt_i32, orientation);
+
 			DisplayMode mode;
+
+			const SDL_DisplayMode *displayMode = SDL_GetDesktopDisplayMode (id);
 
 			mode.height = displayMode->h;
 
@@ -531,18 +554,18 @@ float dpi = 72.0f;
 			hl_dyn_setp (display, id_currentMode, &hlt_dynobj, _displayMode);
 
 			int numDisplayModes;
-			SDL_GetFullscreenDisplayModes (id, &numDisplayModes);
+			SDL_DisplayMode **displayModes = SDL_GetFullscreenDisplayModes (id, &numDisplayModes);
 
 			hl_varray* supportedModes = (hl_varray*)hl_alloc_array (&hlt_dynobj, numDisplayModes);
 			vdynamic** supportedModesData = hl_aptr (supportedModes, vdynamic*);
 
-			auto displays = SDL_GetFullscreenDisplayModes (id, &numDisplayModes);
 			for (int i = 0; i < numDisplayModes; i++) {
 
-				SDL_DisplayMode *sdlDisplayMode = displays[i];
+				SDL_DisplayMode *sdlDisplayMode = displayModes[i];
+
 				mode.height = sdlDisplayMode->h;
 
-				switch (displayMode->format) {
+				switch (sdlDisplayMode->format) {
 
 					case SDL_PIXELFORMAT_ARGB8888:
 
@@ -561,8 +584,8 @@ float dpi = 72.0f;
 
 				}
 
-				mode.refreshRate = displayMode->refresh_rate;
-				mode.width = displayMode->w;
+				mode.refreshRate = sdlDisplayMode->refresh_rate;
+				mode.width = sdlDisplayMode->w;
 
 				vdynamic* _displayMode = (vdynamic*)hl_alloc_dynobj ();
 				hl_dyn_seti (_displayMode, id_height, &hlt_i32, mode.height);
@@ -581,47 +604,20 @@ float dpi = 72.0f;
 
 	}
 
-	#if defined(ANDROID) || defined (IPHONE)
-
-
-	int System::GetFirstGyroscopeSensorId () {
-		int numSensors = SDL_NumSensors ();
-		for (int i = 0; i < numSensors; i++) {
-			if (SDL_SensorGetDeviceType (i) == SDL_SENSOR_GYRO) {
-				return SDL_SensorGetDeviceInstanceID(i);
-			}
-		}
-		return -1;
-	}
-
-	int System::GetFirstAccelerometerSensorId () {
-		int numSensors = SDL_NumSensors ();
-		for (int i = 0; i < numSensors; i++) {
-			if (SDL_SensorGetDeviceType (i) == SDL_SENSOR_ACCEL) {
-				return SDL_SensorGetDeviceInstanceID(i);
-			}
-		}
-		return -1;
-	}
-	#endif
 
 	int System::GetNumDisplays () {
 		int numDisplays;
 		SDL_DisplayID * displays = SDL_GetDisplays(&numDisplays);
 		SDL_free(displays);
 		return numDisplays;
+
 	}
 
 
 	double System::GetTimer () {
-		if(performanceCounter == -1.0) {
-			performanceCounter = (double)SDL_GetPerformanceCounter();
-		}
-		if(performanceFrequency == -1.0) {
-			performanceFrequency = (double)SDL_GetPerformanceFrequency();
-		}
-		const double counter = (double)SDL_GetPerformanceCounter() - performanceCounter;
-		return (counter / performanceFrequency) * 1000.0;
+
+		return SDL_GetTicks ();
+
 	}
 
 
@@ -675,7 +671,6 @@ float dpi = 72.0f;
 	}
 
 
-
 	int FILE_HANDLE::getLength () {
 
 		#ifndef HX_WINDOWS
@@ -696,15 +691,7 @@ float dpi = 72.0f;
 
 	bool FILE_HANDLE::isFile () {
 
-		#ifndef HX_WINDOWS
-
-		//return ((SDL_IOStream*)handle)->type == SDL_RWOPS_STDFILE;
 		return true;
-		#else
-
-		return true;
-
-		#endif
 
 	}
 
@@ -743,105 +730,107 @@ float dpi = 72.0f;
 
 	}
 
+	// SDL_RWFromFP Impl from Migration Guide
+	#include <stdio.h>
+
 	typedef struct IOStreamStdioFPData
-{
-    FILE *fp;
-    bool autoclose;
-} IOStreamStdioFPData;
+	{
+		FILE *fp;
+		bool autoclose;
+	} IOStreamStdioFPData;
 
-static Sint64 SDLCALL stdio_seek(void *userdata, Sint64 offset, SDL_IOWhence whence)
-{
-    FILE *fp = ((IOStreamStdioFPData *) userdata)->fp;
-    int stdiowhence;
+	static Sint64 SDLCALL stdio_seek(void *userdata, Sint64 offset, SDL_IOWhence whence)
+	{
+		FILE *fp = ((IOStreamStdioFPData *) userdata)->fp;
+		int stdiowhence;
 
-    switch (whence) {
-    case SDL_IO_SEEK_SET:
-        stdiowhence = SEEK_SET;
-        break;
-    case SDL_IO_SEEK_CUR:
-        stdiowhence = SEEK_CUR;
-        break;
-    case SDL_IO_SEEK_END:
-        stdiowhence = SEEK_END;
-        break;
-    default:
-        SDL_SetError("Unknown value for 'whence'");
-        return -1;
-    }
+		switch (whence) {
+		case SDL_IO_SEEK_SET:
+			stdiowhence = SEEK_SET;
+			break;
+		case SDL_IO_SEEK_CUR:
+			stdiowhence = SEEK_CUR;
+			break;
+		case SDL_IO_SEEK_END:
+			stdiowhence = SEEK_END;
+			break;
+		default:
+			SDL_SetError("Unknown value for 'whence'");
+			return -1;
+		}
 
-    if (fseek(fp, (long)offset, stdiowhence) == 0) {
-        const Sint64 pos = ftell(fp);
-        if (pos < 0) {
-            SDL_SetError("Couldn't get stream offset");
-            return -1;
-        }
-        return pos;
-    }
-    SDL_SetError("Couldn't seek in stream");
-    return -1;
-}
+		if (fseek(fp, (long int)offset, stdiowhence) == 0) {
+			const Sint64 pos = ftell(fp);
+			if (pos < 0) {
+				SDL_SetError("Couldn't get stream offset");
+				return -1;
+			}
+			return pos;
+		}
+		SDL_SetError("Couldn't seek in stream");
+		return -1;
+	}
 
-static size_t SDLCALL stdio_read(void *userdata, void *ptr, size_t size, SDL_IOStatus *status)
-{
-    FILE *fp = ((IOStreamStdioFPData *) userdata)->fp;
-    const size_t bytes = fread(ptr, 1, size, fp);
-    if (bytes == 0 && ferror(fp)) {
-        SDL_SetError("Couldn't read stream");
-    }
-    return bytes;
-}
+	static size_t SDLCALL stdio_read(void *userdata, void *ptr, size_t size, SDL_IOStatus *status)
+	{
+		FILE *fp = ((IOStreamStdioFPData *) userdata)->fp;
+		const size_t bytes = fread(ptr, 1, size, fp);
+		if (bytes == 0 && ferror(fp)) {
+			SDL_SetError("Couldn't read stream");
+		}
+		return bytes;
+	}
 
-static size_t SDLCALL stdio_write(void *userdata, const void *ptr, size_t size, SDL_IOStatus *status)
-{
-    FILE *fp = ((IOStreamStdioFPData *) userdata)->fp;
-    const size_t bytes = fwrite(ptr, 1, size, fp);
-    if (bytes == 0 && ferror(fp)) {
-        SDL_SetError("Couldn't write stream");
-    }
-    return bytes;
-}
+	static size_t SDLCALL stdio_write(void *userdata, const void *ptr, size_t size, SDL_IOStatus *status)
+	{
+		FILE *fp = ((IOStreamStdioFPData *) userdata)->fp;
+		const size_t bytes = fwrite(ptr, 1, size, fp);
+		if (bytes == 0 && ferror(fp)) {
+			SDL_SetError("Couldn't write stream");
+		}
+		return bytes;
+	}
 
-static bool SDLCALL stdio_close(void *userdata)
-{
-    IOStreamStdioFPData *rwopsdata = (IOStreamStdioFPData *) userdata;
-    bool status = true;
-    if (rwopsdata->autoclose) {
-        if (fclose(rwopsdata->fp) != 0) {
-            SDL_SetError("Couldn't close stream");
-            status = false;
-        }
-    }
-    SDL_free(rwopsdata);
-    return status;
-}
+	static bool SDLCALL stdio_close(void *userdata)
+	{
+		IOStreamStdioFPData *rwopsdata = (IOStreamStdioFPData *) userdata;
+		bool status = true;
+		if (rwopsdata->autoclose) {
+			if (fclose(rwopsdata->fp) != 0) {
+				SDL_SetError("Couldn't close stream");
+				status = false;
+			}
+		}
+		return status;
+	}
 
-SDL_IOStream *SDL_RWFromFP(FILE *fp, bool autoclose)
-{
-    SDL_IOStreamInterface iface;
-    IOStreamStdioFPData *rwopsdata;
-    SDL_IOStream *rwops;
+	SDL_IOStream *SDL_RWFromFP(FILE *fp, bool autoclose)
+	{
+		SDL_IOStreamInterface iface;
+		IOStreamStdioFPData *rwopsdata;
+		SDL_IOStream *rwops;
 
-    rwopsdata = (IOStreamStdioFPData *) SDL_malloc(sizeof (*rwopsdata));
-    if (!rwopsdata) {
-        return NULL;
-    }
+		rwopsdata = (IOStreamStdioFPData *) SDL_malloc(sizeof (*rwopsdata));
+		if (!rwopsdata) {
+			return NULL;
+		}
 
-    SDL_INIT_INTERFACE(&iface);
-    /* There's no stdio_size because SDL_GetIOSize emulates it the same way we'd do it for stdio anyhow. */
-    iface.seek = stdio_seek;
-    iface.read = stdio_read;
-    iface.write = stdio_write;
-    iface.close = stdio_close;
+		SDL_INIT_INTERFACE(&iface);
+		/* There's no stdio_size because SDL_GetIOSize emulates it the same way we'd do it for stdio anyhow. */
+		iface.seek = stdio_seek;
+		iface.read = stdio_read;
+		iface.write = stdio_write;
+		iface.close = stdio_close;
 
-    rwopsdata->fp = fp;
-    rwopsdata->autoclose = autoclose;
+		rwopsdata->fp = fp;
+		rwopsdata->autoclose = autoclose;
 
-    rwops = SDL_OpenIO(&iface, rwopsdata);
-    if (!rwops) {
-        iface.close(rwopsdata);
-    }
-    return rwops;
-}
+		rwops = SDL_OpenIO(&iface, rwopsdata);
+		if (!rwops) {
+			iface.close(rwopsdata);
+		}
+		return rwops;
+	}
 
 	FILE_HANDLE *fdopen (int fd, const char *mode) {
 
@@ -849,7 +838,7 @@ SDL_IOStream *SDL_RWFromFP(FILE *fp, bool autoclose)
 
 		System::GCEnterBlocking ();
 		FILE* fp = ::fdopen (fd, mode);
-		auto result = SDL_RWFromFP (fp, true);
+		SDL_IOStream *result = SDL_RWFromFP (fp, true);
 		System::GCExitBlocking ();
 
 		if (result) {
@@ -885,7 +874,7 @@ SDL_IOStream *SDL_RWFromFP(FILE *fp, bool autoclose)
 
 		#ifndef HX_WINDOWS
 
-		SDL_IOStream* result;
+		SDL_IOStream *result;
 
 		System::GCEnterBlocking ();
 
@@ -966,7 +955,10 @@ SDL_IOStream *SDL_RWFromFP(FILE *fp, bool autoclose)
 
 		#ifndef HX_WINDOWS
 
-		nmem = SDL_ReadIO (stream ? (SDL_IOStream*)stream->handle : NULL, ptr, size);
+        if(size > 0 && count > 0)
+	  	    nmem = SDL_ReadIO (stream ? (SDL_IOStream*)stream->handle : NULL, ptr, size * count) / size;
+        else
+		    nmem = 0;
 
 		#else
 
@@ -1029,7 +1021,10 @@ SDL_IOStream *SDL_RWFromFP(FILE *fp, bool autoclose)
 
 		#ifndef HX_WINDOWS
 
-		nmem = SDL_WriteIO (stream ? (SDL_IOStream*)stream->handle : NULL, ptr, size);
+  		if(size > 0 && count > 0)
+            nmem = SDL_WriteIO (stream ? (SDL_IOStream*)stream->handle : NULL, ptr, size * count) / size;
+        else
+		    nmem = 0;
 
 		#else
 

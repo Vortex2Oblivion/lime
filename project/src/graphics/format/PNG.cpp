@@ -142,10 +142,7 @@ namespace lime {
 			if (file->isFile ()) {
 
 				png_init_io (png_ptr, file->getFile ());
-
-				#ifndef ANDROID
 				png_set_sig_bytes (png_ptr, PNG_SIG_SIZE);
-				#endif
 
 			} else {
 
@@ -240,8 +237,6 @@ namespace lime {
 
 		if (!info_ptr) {
 
-			png_destroy_write_struct (&png_ptr, NULL);
-
 			return false;
 
 		}
@@ -314,8 +309,6 @@ namespace lime {
 			memcpy (bytes->b, &out_buffer[0], size);
 
 		}
-
-		png_destroy_write_struct (&png_ptr, &info_ptr);
 
 		return true;
 

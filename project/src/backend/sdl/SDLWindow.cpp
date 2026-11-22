@@ -5,10 +5,11 @@
 #include "../../graphics/opengl/OpenGLBindings.h"
 
 #ifdef HX_WINDOWS
-#include <SDL3/SDL_properties.h>
+//#include <SDL_syswm.h>
 #include <Windows.h>
 #undef CreateWindow
 #endif
+
 
 namespace lime {
 
@@ -44,7 +45,6 @@ namespace lime {
 
 		int sdlWindowFlags = 0;
 
-		if (flags & WINDOW_FLAG_FULLSCREEN) sdlWindowFlags |= SDL_WINDOW_FULLSCREEN;
 		if (flags & WINDOW_FLAG_RESIZABLE) sdlWindowFlags |= SDL_WINDOW_RESIZABLE;
 		if (flags & WINDOW_FLAG_BORDERLESS) sdlWindowFlags |= SDL_WINDOW_BORDERLESS;
 		if (flags & WINDOW_FLAG_HIDDEN) sdlWindowFlags |= SDL_WINDOW_HIDDEN;
@@ -158,7 +158,11 @@ namespace lime {
 
 		}
 
-		sdlWindow = SDL_CreateWindow (title, /*SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,*/ width, height, sdlWindowFlags);
+		sdlWindow = SDL_CreateWindow (title, width, height, sdlWindowFlags);
+
+		if (flags & WINDOW_FLAG_FULLSCREEN){
+			SDL_SetWindowFullscreen(sdlWindow, true);
+		}
 
 		#if defined (IPHONE) || defined (APPLETV)
 		if (sdlWindow && !SDL_GL_CreateContext (sdlWindow)) {
@@ -179,7 +183,6 @@ namespace lime {
 		}
 
 		#if defined (HX_WINDOWS) && !defined (HX_WINRT)
-
 
 		HINSTANCE handle = ::GetModuleHandle (nullptr);
 		HICON icon = ::LoadIcon (handle, MAKEINTRESOURCE (1));
@@ -203,7 +206,7 @@ namespace lime {
 
 		if (flags & WINDOW_FLAG_HARDWARE) {
 
-			// sdlRendererFlags |= SDL_RENDERER_ACCELERATED;
+			//sdlRendererFlags |= SDL_RENDERER_ACCELERATED;
 
 			// if (window->flags & WINDOW_FLAG_VSYNC) {
 
@@ -279,12 +282,12 @@ namespace lime {
 
 		if (!context) {
 
-			//sdlRendererFlags &= ~SDL_RENDERER_ACCELERATED;
-			//sdlRendererFlags &= ~SDL_RENDERER_PRESENTVSYNC;
+			/*sdlRendererFlags &= ~SDL_RENDERER_ACCELERATED;*/
+			/*sdlRendererFlags &= ~SDL_RENDERER_PRESENTVSYNC;
 
-			//sdlRendererFlags |= SDL_RENDERER_SOFTWARE;
+			sdlRendererFlags |= SDL_RENDERER_SOFTWARE;
 
-			//sdlRenderer = SDL_CreateRenderer (sdlWindow, -1, sdlRendererFlags);
+			sdlRenderer = SDL_CreateRenderer (sdlWindow, -1, sdlRendererFlags);*/
 			sdlRenderer = SDL_CreateSoftwareRenderer (SDL_GetWindowSurface(sdlWindow));
 		}
 
@@ -325,7 +328,6 @@ namespace lime {
 
 	void SDLWindow::Alert (const char* message, const char* title) {
 
-
 		#if defined (HX_WINDOWS) && !defined (HX_WINRT)
 
 		int count = 0;
@@ -347,7 +349,6 @@ namespace lime {
 			SDL_ShowSimpleMessageBox (SDL_MESSAGEBOX_INFORMATION, title, message, sdlWindow);
 
 		}
-
 
 	}
 
@@ -376,7 +377,7 @@ namespace lime {
 
 		}
 
-		return (SDL_GetWindowFlags (sdlWindow) /*& SDL_WINDOW_SHOWN*/);
+		return (SDL_GetWindowFlags (sdlWindow) & SDL_WINDOW_HIDDEN);
 
 	}
 
@@ -526,6 +527,7 @@ namespace lime {
 			return "opengl";
 
 		} else if (sdlRenderer) {
+
 			if (SDL_GetRendererName(sdlRenderer) == SDL_SOFTWARE_RENDERER) {
 
 				return "software";
@@ -552,7 +554,7 @@ namespace lime {
 
 	void SDLWindow::GetDisplayMode (DisplayMode* displayMode) {
 
-		auto mode = SDL_GetWindowFullscreenMode (sdlWindow);
+		const SDL_DisplayMode *mode = SDL_GetWindowFullscreenMode (sdlWindow);
 
 		displayMode->width = mode->w;
 		displayMode->height = mode->h;
@@ -602,13 +604,14 @@ namespace lime {
 
 	bool SDLWindow::GetMouseLock () {
 
-		return SDL_GetWindowRelativeMouseMode (sdlWindow);
+		return SDL_GetWindowRelativeMouseMode  (sdlWindow);
 
 	}
 
 
 	float SDLWindow::GetOpacity () {
 		return SDL_GetWindowOpacity (sdlWindow);
+
 	}
 
 
@@ -784,7 +787,8 @@ namespace lime {
 			switch (cursor) {
 
 				case HIDDEN:
-					SDL_HideCursor ();
+
+					SDL_ShowCursor ();
 
 				case CROSSHAIR:
 
@@ -800,7 +804,9 @@ namespace lime {
 				case MOVE:
 
 					if (!SDLCursor::moveCursor) {
+
 						SDLCursor::moveCursor = SDL_CreateSystemCursor (SDL_SYSTEM_CURSOR_MOVE);
+
 					}
 
 					SDL_SetCursor (SDLCursor::moveCursor);
@@ -936,15 +942,14 @@ namespace lime {
 
 		}
 
-		SDL_DisplayMode mode = {static_cast<SDL_DisplayID>(GetDisplay()), pixelFormat, displayMode->width, displayMode->height, (float)(SDL_GetDesktopDisplayMode(1)->pixel_density), (float)(displayMode->refreshRate), 0, 0 };
-
+		SDL_DisplayMode mode = { static_cast<SDL_DisplayID>(GetDisplay()), pixelFormat, displayMode->width, displayMode->height, (float)(SDL_GetDesktopDisplayMode(1)->pixel_density), (float)(displayMode->refreshRate), 0, 0 };
 		if (SDL_SetWindowFullscreenMode (sdlWindow, &mode)) {
 
 			displayModeSet = true;
 
 			if (SDL_GetWindowFlags (sdlWindow) & SDL_WINDOW_FULLSCREEN) {
 
-				SDL_SetWindowFullscreen (sdlWindow, true);
+				SDL_SetWindowFullscreen (sdlWindow, SDL_WINDOW_FULLSCREEN);
 
 			}
 
@@ -954,15 +959,22 @@ namespace lime {
 
 
 	bool SDLWindow::SetFullscreen (bool fullscreen) {
-		SDL_SetWindowFullscreen (sdlWindow, fullscreen);
+		SDL_SetWindowFullscreen(sdlWindow, fullscreen);
 		return fullscreen;
+
+	}
+
+	SDL_Surface *SDL_CreateRGBSurfaceFrom(void *pixels, int width, int height, int depth, int pitch, Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask)
+	{
+		return SDL_CreateSurfaceFrom(width, height,
+									SDL_GetPixelFormatForMasks(depth, Rmask, Gmask, Bmask, Amask),
+									pixels, pitch);
 	}
 
 
 	void SDLWindow::SetIcon (ImageBuffer *imageBuffer) {
 
-		SDL_Surface *surface = SDL_CreateSurfaceFrom (imageBuffer->width, imageBuffer->height, (SDL_PixelFormat)imageBuffer->format, imageBuffer->__srcBitmapData, imageBuffer->bitsPerPixel);
-
+		SDL_Surface *surface = SDL_CreateRGBSurfaceFrom (imageBuffer->data->buffer->b, imageBuffer->width, imageBuffer->height, imageBuffer->bitsPerPixel, imageBuffer->Stride (), 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
 		if (surface) {
 
 			SDL_SetWindowIcon (sdlWindow, surface);
