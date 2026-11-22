@@ -5,11 +5,10 @@
 #include "../../graphics/opengl/OpenGLBindings.h"
 
 #ifdef HX_WINDOWS
-#include <SDL_syswm.h>
+#include <SDL3/SDL_properties.h>
 #include <Windows.h>
 #undef CreateWindow
 #endif
-
 
 namespace lime {
 
@@ -181,18 +180,13 @@ namespace lime {
 
 		#if defined (HX_WINDOWS) && !defined (HX_WINRT)
 
+
 		HINSTANCE handle = ::GetModuleHandle (nullptr);
 		HICON icon = ::LoadIcon (handle, MAKEINTRESOURCE (1));
 
 		if (icon != nullptr) {
-
-			SDL_SysWMinfo wminfo;
-			SDL_VERSION (&wminfo.version);
-
-			if (SDL_GetWindowWMInfo (sdlWindow, &wminfo) == 1) {
-
-				HWND hwnd = wminfo.info.win.window;
-
+			HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(sdlWindow), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+			if (hwnd) {
 				#ifdef _WIN64
 				::SetClassLongPtr (hwnd, GCLP_HICON, reinterpret_cast<LONG_PTR>(icon));
 				#else
@@ -331,19 +325,16 @@ namespace lime {
 
 	void SDLWindow::Alert (const char* message, const char* title) {
 
+
 		#if defined (HX_WINDOWS) && !defined (HX_WINRT)
 
 		int count = 0;
 		int speed = 0;
 		bool stopOnForeground = true;
 
-		SDL_SysWMinfo info;
-		SDL_VERSION (&info.version);
-		SDL_GetWindowWMInfo (sdlWindow, &info);
-
 		FLASHWINFO fi;
 		fi.cbSize = sizeof (FLASHWINFO);
-		fi.hwnd = info.info.win.window;
+		fi.hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(sdlWindow), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 		fi.dwFlags = stopOnForeground ? FLASHW_ALL | FLASHW_TIMERNOFG : FLASHW_ALL | FLASHW_TIMER;
 		fi.uCount = count;
 		fi.dwTimeout = speed;
@@ -356,6 +347,7 @@ namespace lime {
 			SDL_ShowSimpleMessageBox (SDL_MESSAGEBOX_INFORMATION, title, message, sdlWindow);
 
 		}
+
 
 	}
 

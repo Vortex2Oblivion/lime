@@ -435,6 +435,10 @@
 				<lib name="shell32.lib" />
 				<lib name="comdlg32.lib" />
 				<lib name="setupapi.lib" />
+				<lib name="avrt.lib" />
+				<lib name="d3d12.lib" />
+				<lib name="dxguid.lib" />
+				<lib name="gameinput.lib" />
 
 				<lib name="usp10.lib" if="LIME_HARFBUZZ" />
 				<lib name="rpcrt4.lib" if="LIME_HARFBUZZ" />
