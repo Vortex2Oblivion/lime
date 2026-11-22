@@ -72,6 +72,7 @@
 		<file name="${NATIVE_TOOLKIT_PATH}/libpixman/pixman/pixman-utils.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/libpixman/pixman/pixman-x86.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/libpixman/pixman/pixman.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libpixman/pixman/pixman-riscv.c" />
 
 	</files>
 
