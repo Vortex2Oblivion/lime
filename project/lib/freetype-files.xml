@@ -129,16 +129,13 @@
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/type1/type1.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/type42/type42.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/winfonts/winfnt.c" />
-		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/hvf/hvf.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/hvf/hvfdrv.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/hvf/hvfload.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/hvf/hvfobjs.c" />
-		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/svg/svg.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/svg/ftsvg.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/sdf/ftsdf.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/sdf/ftbsdf.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/sdf/ftsdfcommon.c" />
 		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/sdf/ftsdfrend.c" />
-		<file name="${NATIVE_TOOLKIT_PATH}/freetype/src/sdf/sdf.c" />
 	</files>
 </xml>
