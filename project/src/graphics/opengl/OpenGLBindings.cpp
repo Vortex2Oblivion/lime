@@ -521,6 +521,18 @@ namespace lime {
 
 	}
 
+	HL_PRIM void HL_NAME(hl_gl_blend_barrier) () {
+
+		glBlendBarrierKHR ();
+
+	}
+
+	void lime_gl_blend_barrier () {
+
+		glBlendBarrierKHR ();
+
+	}
+
 
 	void lime_gl_blit_framebuffer (int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
 
