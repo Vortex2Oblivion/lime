@@ -61,12 +61,13 @@
 		<file name="src/ExternalInterface.cpp" />
 
 		<section if="LIME_CAIRO">
-
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include/configs/default/" unless="windows || mac || linux" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include/configs/linux/" if="linux" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include/configs/windows/" if="windows" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/include/configs/mac/" if="mac" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/src" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libcairo/src" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libcairo/include" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/include/configs/default/" unless="windows || mac || linux" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/include/configs/linux/" if="linux" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/include/configs/windows/" if="windows" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/include/configs/mac/" if="mac" />
 			<compilerflag value="-DLIME_CAIRO" />
 			<compilerflag value="-DHAVE_CONFIG_H" />
 			<compilerflag value="-DCAIRO_WIN32_STATIC_BUILD" if="windows" />
@@ -106,14 +107,14 @@
 
 		<section if="LIME_FREETYPE">
 
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/freetype/include" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libfreetype/include" />
 			<compilerflag value="-DLIME_FREETYPE" />
 
 			<file name="src/text/Font.cpp" />
 
 			<section if="LIME_HARFBUZZ">
 
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/harfbuzz/src" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libharfbuzz/src" />
 				<compilerflag value="-DLIME_HARFBUZZ" />
 
 				<file name="src/text/harfbuzz/HarfbuzzBindings.cpp" />
@@ -175,7 +176,7 @@
 
 		<section if="LIME_OPENAL">
 
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/openal/include/" unless="LIME_MOJOAL || emscripten" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/openal-soft/include/" unless="LIME_MOJOAL || emscripten" />
 			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/mojoal/" if="LIME_MOJOAL" />
 			<compilerflag value="-DLIME_OPENAL" />
 			<compilerflag value="-DLIME_OPENALSOFT" if="LIME_OPENALSOFT" />
@@ -197,9 +198,9 @@
 		</section>
 
 		<section if="LIME_PNG">
-
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/png/" />
-			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/zlib/" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/png/" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libpng/" />
+			<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libzlib/" />
 			<compilerflag value="-DLIME_PNG" />
 
 			<file name="src/graphics/format/PNG.cpp" />
@@ -217,13 +218,13 @@
 
 			<section unless="emscripten">
 
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/default/" unless="windows || mac || linux || rpi" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/linux/" if="linux" unless="rpi" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/windows/" if="windows" unless="winrt" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/mac/" if="mac" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/rpi/" if="rpi" />
-				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/winrt/" if="winrt" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libsdl/include/" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libsdl/include/configs/default/" unless="windows || mac || linux || rpi" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libsdl/include/configs/linux/" if="linux" unless="rpi" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libsdl/include/configs/windows/" if="windows" unless="winrt" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libsdl/include/configs/mac/" if="mac" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libsdl/include/configs/rpi/" if="rpi" />
+				<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libsdl/include/configs/winrt/" if="winrt" />
 
 				<compilerflag value="-DHAVE_LIBC" />
 
@@ -330,27 +331,27 @@
 
 	</files>
 
-	<include name="lib/cairo/files.xml" />
+	<include name="lib/cairo-files.xml" />
 	<include name="lib/curl-files.xml" />
 	<include name="lib/efsw/files.xml" />
 	<include name="lib/faudio/files.xml" if="LIME_FAUDIO" />
-	<include name="lib/freetype/files.xml" />
-	<include name="lib/harfbuzz/files.xml" />
+	<include name="lib/freetype-files.xml" />
+	<include name="lib/harfbuzz-files.xml" />
 	<include name="lib/jpeg/files.xml" />
 	<include name="lib/lzma/files.xml" />
 	<include name="lib/mbedtls-files.xml" />
 	<include name="lib/mojoal/files.xml" />
 	<include name="lib/neko/files.xml" />
 	<include name="lib/ogg/files.xml" />
-	<include name="lib/openal/files.xml" />
-	<include name="lib/pixman/files.xml" />
-	<include name="lib/png/files.xml" />
-	<include name="lib/sdl/files.xml" />
+	<include name="lib/openal-files.xml" />
+	<include name="lib/pixman-files.xml" />
+	<include name="lib/png-files.xml" />
+	<include name="lib/sdl-files.xml" />
 	<include name="lib/tinyfiledialogs-files.xml" />
 	<include name="lib/vorbis/files.xml" />
 	<include name="lib/vpx/files.xml" />
 	<include name="lib/webm/files.xml" />
-	<include name="lib/zlib/files.xml" />
+	<include name="lib/zlib-files.xml" />
 
 	<set name="DEBUGEXTRA" value="-debug" if="fulldebug" />
 	<set name="LIBSUFFIX" value="${HX_TARGET_SUFFIX}" if="HX_TARGET_SUFFIX" />

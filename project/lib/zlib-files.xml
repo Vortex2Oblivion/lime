@@ -1,0 +1,29 @@
+<xml>
+
+	<files id="native-toolkit-zlib">
+
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libzlib/" />
+
+		<!-- Use unistd.h anywhere except Win32. -->
+		<compilerflag value="-DZ_HAVE_UNISTD_H" unless="windows" />
+		<compilerflag value="-DZ_HAVE_UNISTD_H" if="windows HXCPP_X86_64" />
+
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/adler32.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/compress.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/crc32.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/deflate.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/gzclose.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/gzlib.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/gzread.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/gzwrite.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/infback.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/inffast.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/inflate.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/inftrees.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/trees.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/uncompr.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libzlib/zutil.c" />
+
+	</files>
+
+</xml>

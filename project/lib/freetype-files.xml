@@ -1,0 +1,139 @@
+<xml>
+
+	<files id="native-toolkit-freetype-depends">
+
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/config/ftconfig.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/config/ftheader.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/config/ftmodule.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/custom/freetype/include/freetype/config/ftoption.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/config/ftstdlib.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/freetype.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftadvanc.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftbbox.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftbdf.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftbitmap.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftbzip2.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftcache.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftchapters.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftcid.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftcolor.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftdriver.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/fterrdef.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/fterrors.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftfntfmt.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftgasp.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftglyph.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftgxval.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftgzip.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftimage.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftincrem.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftlcdfil.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftlist.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftlzw.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftmac.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftmm.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftmodapi.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftmoderr.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftotval.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftoutln.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftparams.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftpfr.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftrender.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftsizes.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftsnames.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftstroke.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftsynth.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftsystem.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/fttrigon.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/fttypes.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ftwinfnt.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/t1tables.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/ttnameid.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/tttables.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/libfreetype/include/freetype/tttags.h" />
+		<depend name="${NATIVE_TOOLKIT_PATH}/custom/freetype/include/ft2build.h" />
+
+	</files>
+
+	<files id="native-toolkit-freetype" tags="">
+
+		<cache value="1" />
+		<tag value="${NATIVE_TOOLKIT_OPTIM_TAG}" if="NATIVE_TOOLKIT_OPTIM_TAG" />
+		<depend files="native-toolkit-freetype-depends" />
+
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/freetype/include" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libfreetype/include" />
+		<compilerflag value="-DFT2_BUILD_LIBRARY" />
+
+		<compilerflag value="-DNATIVE_TOOLKIT_HAVE_HARFBUZZ" if="NATIVE_TOOLKIT_HAVE_HARFBUZZ" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/harfbuzz/src" if="NATIVE_TOOLKIT_HAVE_HARFBUZZ" />
+
+		<compilerflag value="-DNATIVE_TOOLKIT_HAVE_PNG" if="NATIVE_TOOLKIT_HAVE_PNG" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/png" if="NATIVE_TOOLKIT_HAVE_PNG" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/libpng" if="NATIVE_TOOLKIT_HAVE_PNG" />
+
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/zlib" /> <!-- To go with FT_CONFIG_OPTION_SYSTEM_ZLIB -->
+
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/autofit/autofit.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftadvanc.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftbbox.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftbitmap.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftcalc.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftcid.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftcolor.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftdbgmem.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftdebug.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftfntfmt.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftfstype.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftgasp.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftgloadr.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftglyph.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftgxval.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/fthash.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftinit.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftlcdfil.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftmm.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftobjs.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftotval.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftoutln.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftpatent.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftpfr.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftpsprop.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftrfork.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftsnames.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftstream.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftstroke.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftsynth.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftsystem.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/fttrigon.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/fttype1.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftutil.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/base/ftwinfnt.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/bdf/bdf.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/bzip2/ftbzip2.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/cache/ftcache.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/cff/cff.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/cid/type1cid.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/gzip/ftgzip.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/lzw/ftlzw.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/pcf/pcf.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/pfr/pfr.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/psaux/psaux.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/pshinter/pshinter.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/psnames/psmodule.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/raster/raster.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/sdf/ftbsdf.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/sdf/ftsdf.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/sdf/ftsdfcommon.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/sdf/ftsdfrend.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/sfnt/sfnt.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/smooth/smooth.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/svg/ftsvg.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/truetype/truetype.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/type1/type1.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/type42/type42.c" />
+		<file name="${NATIVE_TOOLKIT_PATH}/libfreetype/src/winfonts/winfnt.c" />
+
+	</files>
+
+</xml>
