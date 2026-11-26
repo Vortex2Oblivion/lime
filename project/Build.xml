@@ -339,7 +339,7 @@
 	<include name="lib/jpeg/files.xml" />
 	<include name="lib/lzma/files.xml" />
 	<include name="lib/mbedtls-files.xml" />
-	<include name="lib/mojoal/files.xml" />
+	<include name="lib/mojoal-files.xml" />
 	<include name="lib/neko/files.xml" />
 	<include name="lib/ogg/files.xml" />
 	<include name="lib/openal-files.xml" />
